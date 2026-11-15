@@ -9,6 +9,13 @@ const geistMono = { variable: "--font-geist-mono" };
 export const metadata: Metadata = {
   title: "HACKPRO - Hackathon Platform",
   description: "HACKPRO - Next-gen Hackathon Management Platform",
+  icons: {
+    icon: [
+      { url: "/hackpro-icon.png" },
+    ],
+    shortcut: "/hackpro-icon.png",
+    apple: "/hackpro-icon.png",
+  },
 };
 
 export const dynamic = 'force-dynamic';
