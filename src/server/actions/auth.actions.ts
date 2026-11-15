@@ -1,0 +1,79 @@
+"use server";
+
+import { cookies } from 'next/headers';
+import * as AuthService from '@/server/services/auth.service';
+
+export async function loginStaffAction(uniqueId: string, password: string) {
+  try {
+    const result = await AuthService.loginStaff(uniqueId, password);
+    
+    if (!result.success || !result.token) {
+      return { success: false, message: result.message || 'Invalid credentials' };
+    }
+
+    // Set cookie
+    const cookieStore = await cookies();
+    cookieStore.set('token', result.token, { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production', 
+      path: '/', 
+      maxAge: 60 * 60 * 24 
+    });
+
+    return { success: true, role: result.role };
+  } catch (error) {
+    console.error('Login Error:', error);
+    return { success: false, message: 'Internal Server Error' };
+  }
+}
+
+export async function unifiedLoginAction(identifier: string, passwordSecret: string) {
+  try {
+    const trimmedId = (identifier || '').trim();
+    const trimmedSecret = (passwordSecret || '').trim();
+
+    // 1. Attempt Staff / Admin / Judge login first
+    const staffRes = await AuthService.loginStaff(trimmedId, trimmedSecret);
+    if (staffRes.success && staffRes.token) {
+      const cookieStore = await cookies();
+      cookieStore.set('token', staffRes.token, { 
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === 'production', 
+        path: '/', 
+        maxAge: 60 * 60 * 24 
+      });
+      return { success: true, role: staffRes.role };
+    }
+
+    // 2. Attempt Team / Student login
+    const teamRes = await AuthService.loginTeam(trimmedId, trimmedSecret);
+    if (teamRes.success && teamRes.token) {
+      const cookieStore = await cookies();
+      cookieStore.set('token', teamRes.token, { 
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === 'production', 
+        path: '/', 
+        maxAge: 60 * 60 * 24 
+      });
+      return { success: true, role: teamRes.role };
+    }
+
+    // If team qualification restriction was triggered, return its specific message
+    if (teamRes.message && teamRes.message.includes('Access Denied')) {
+      return { success: false, message: teamRes.message };
+    }
+
+    return { success: false, message: 'Invalid credentials. Please check your login details.' };
+  } catch (error) {
+    console.error('Unified Login Error:', error);
+    return { success: false, message: 'Internal Server Error' };
+  }
+}
+
+import { verifyApiAuth } from '@/server/middleware/apiAuth';
+
+export async function getMeAction() {
+  const auth = await verifyApiAuth();
+  if (!auth.authenticated) return { success: false, user: null };
+  return { success: true, user: auth.user };
+}

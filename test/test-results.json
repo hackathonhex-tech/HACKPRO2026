@@ -1,0 +1,309 @@
+{
+  "timestamp": "2026-11-14T17:11:59.059Z",
+  "environment": {
+    "nodeVersion": "v25.2.1",
+    "platform": "win32",
+    "database": "mongodb://127.0.0.1:27017/hackathon_platform",
+    "port": 5050
+  },
+  "suites": {
+    "publicUI": [
+      {
+        "name": "Landing Page GET /",
+        "passed": true,
+        "details": "Status 200, Size 33454b, Latency 79ms",
+        "metrics": null
+      },
+      {
+        "name": "Leaderboard Page GET /leaderboard",
+        "passed": true,
+        "details": "Status 200, Size 17649b, Latency 58ms",
+        "metrics": null
+      },
+      {
+        "name": "Timer Page GET /timer",
+        "passed": true,
+        "details": "Status 200, Size 29832b, Latency 96ms",
+        "metrics": null
+      },
+      {
+        "name": "Team Registration Page GET /register",
+        "passed": true,
+        "details": "Status 200, Size 16074b, Latency 68ms",
+        "metrics": null
+      }
+    ],
+    "securityRBAC": [
+      {
+        "name": "Unauthenticated Access to /admin/dashboard",
+        "passed": true,
+        "details": "Status 307, RedirectLocation: /",
+        "metrics": null
+      },
+      {
+        "name": "Unauthenticated Access to /admin/users",
+        "passed": true,
+        "details": "Status 307, RedirectLocation: /",
+        "metrics": null
+      },
+      {
+        "name": "Unauthenticated Access to /admin/settings",
+        "passed": true,
+        "details": "Status 307, RedirectLocation: /",
+        "metrics": null
+      },
+      {
+        "name": "Unauthenticated Access to /judge/dashboard",
+        "passed": true,
+        "details": "Status 307, RedirectLocation: /",
+        "metrics": null
+      },
+      {
+        "name": "Unauthenticated Access to /team/dashboard",
+        "passed": true,
+        "details": "Status 307, RedirectLocation: /",
+        "metrics": null
+      },
+      {
+        "name": "Privilege Escalation Barrier: Team Token accessing /admin/dashboard",
+        "passed": true,
+        "details": "Status 307, RedirectLocation: /",
+        "metrics": null
+      },
+      {
+        "name": "Privilege Escalation Barrier: Judge Token accessing /admin/settings",
+        "passed": true,
+        "details": "Status 307, RedirectLocation: /",
+        "metrics": null
+      },
+      {
+        "name": "POST /api/timer Unauthenticated Protection (Security Guard)",
+        "passed": true,
+        "details": "Status 401, Blocked with error: Authentication required",
+        "metrics": null
+      }
+    ],
+    "authenticatedUI": [
+      {
+        "name": "Admin Portal: GET /admin/dashboard",
+        "passed": true,
+        "details": "Status 200, Length 18586b, Latency 1197ms",
+        "metrics": null
+      },
+      {
+        "name": "Admin Portal: GET /admin/users",
+        "passed": true,
+        "details": "Status 200, Length 18439b, Latency 4182ms",
+        "metrics": null
+      },
+      {
+        "name": "Admin Portal: GET /admin/setup",
+        "passed": true,
+        "details": "Status 200, Length 28033b, Latency 1725ms",
+        "metrics": null
+      },
+      {
+        "name": "Admin Portal: GET /admin/settings",
+        "passed": true,
+        "details": "Status 200, Length 18451b, Latency 1536ms",
+        "metrics": null
+      },
+      {
+        "name": "Admin Portal: GET /admin/rubric",
+        "passed": true,
+        "details": "Status 200, Length 33661b, Latency 1461ms",
+        "metrics": null
+      },
+      {
+        "name": "Admin Portal: GET /admin/round-qualification",
+        "passed": true,
+        "details": "Status 200, Length 18538b, Latency 1583ms",
+        "metrics": null
+      },
+      {
+        "name": "Admin Portal: GET /admin/attendance",
+        "passed": true,
+        "details": "Status 200, Length 21980b, Latency 2299ms",
+        "metrics": null
+      },
+      {
+        "name": "Admin Portal: GET /admin/deliverables",
+        "passed": true,
+        "details": "Status 200, Length 23017b, Latency 2174ms",
+        "metrics": null
+      },
+      {
+        "name": "Admin Portal: GET /admin/scanner",
+        "passed": true,
+        "details": "Status 200, Length 20893b, Latency 5698ms",
+        "metrics": null
+      },
+      {
+        "name": "Judge Portal: GET /judge/dashboard",
+        "passed": true,
+        "details": "Status 200, Length 21054b, Latency 106ms",
+        "metrics": null
+      },
+      {
+        "name": "Team Portal: GET /team/dashboard",
+        "passed": true,
+        "details": "Status 200, Length 11810b, Latency 84ms",
+        "metrics": null
+      },
+      {
+        "name": "Team Portal: GET /team/problem-statement",
+        "passed": true,
+        "details": "Status 200, Length 11866b, Latency 1303ms",
+        "metrics": null
+      },
+      {
+        "name": "Team Portal: GET /team/submit",
+        "passed": true,
+        "details": "Status 200, Length 11789b, Latency 1443ms",
+        "metrics": null
+      }
+    ],
+    "apiEndpoints": [
+      {
+        "name": "GET /api/timer State Verification",
+        "passed": true,
+        "details": "Timer Status: STOPPED, DurationRemaining: 3600s",
+        "metrics": null
+      },
+      {
+        "name": "POST /api/timer Admin Control (Authenticated)",
+        "passed": true,
+        "details": "Status 200, Timer Set to: 3600s",
+        "metrics": null
+      },
+      {
+        "name": "POST /api/auth/login (Admin Credentials)",
+        "passed": true,
+        "details": "Status 200, TokenCookieEmitted: true",
+        "metrics": null
+      },
+      {
+        "name": "POST /api/auth/login Rejects Bad Credentials",
+        "passed": true,
+        "details": "Status 401",
+        "metrics": null
+      },
+      {
+        "name": "POST /api/auth/team-login (Team Credentials)",
+        "passed": true,
+        "details": "Status 200, Role: team",
+        "metrics": null
+      },
+      {
+        "name": "Security Audit: POST /api/timer Authentication Enforcement",
+        "passed": true,
+        "details": "Protected",
+        "metrics": null
+      }
+    ],
+    "workloadStress": [
+      {
+        "name": "Load Benchmark: /api/timer (10 Concurrency, 50 Requests)",
+        "passed": true,
+        "details": "RPS: 60.39, Mean: 155.72ms, p50: 162ms, p95: 198ms, p99: 203ms, Errors: 0%",
+        "metrics": {
+          "path": "/api/timer",
+          "concurrency": 10,
+          "totalRequests": 50,
+          "successful": 50,
+          "failed": 0,
+          "errorRate": 0,
+          "totalDurationSec": 0.828,
+          "rps": 60.39,
+          "latency": {
+            "minMs": 22,
+            "meanMs": 155.72,
+            "p50Ms": 162,
+            "p90Ms": 181,
+            "p95Ms": 198,
+            "p99Ms": 203,
+            "maxMs": 203
+          }
+        }
+      },
+      {
+        "name": "Stress Benchmark: /api/timer (25 Concurrency, 100 Requests)",
+        "passed": true,
+        "details": "RPS: 50.99, Mean: 470.06ms, p50: 380ms, p95: 813ms, p99: 1096ms, Errors: 0%",
+        "metrics": {
+          "path": "/api/timer",
+          "concurrency": 25,
+          "totalRequests": 100,
+          "successful": 100,
+          "failed": 0,
+          "errorRate": 0,
+          "totalDurationSec": 1.961,
+          "rps": 50.99,
+          "latency": {
+            "minMs": 230,
+            "meanMs": 470.06,
+            "p50Ms": 380,
+            "p90Ms": 806,
+            "p95Ms": 813,
+            "p99Ms": 1096,
+            "maxMs": 1096
+          }
+        }
+      },
+      {
+        "name": "Load Benchmark: SSR /leaderboard (5 Concurrency, 30 Requests)",
+        "passed": true,
+        "details": "RPS: 16.56, Mean: 300.97ms, p50: 297ms, p95: 378ms, p99: 378ms, Errors: 0%",
+        "metrics": {
+          "path": "/leaderboard",
+          "concurrency": 5,
+          "totalRequests": 30,
+          "successful": 30,
+          "failed": 0,
+          "errorRate": 0,
+          "totalDurationSec": 1.812,
+          "rps": 16.56,
+          "latency": {
+            "minMs": 244,
+            "meanMs": 300.97,
+            "p50Ms": 297,
+            "p90Ms": 373,
+            "p95Ms": 378,
+            "p99Ms": 378,
+            "maxMs": 378
+          }
+        }
+      },
+      {
+        "name": "CPU/Crypto Benchmark: /api/auth/login (5 Concurrency, 20 Requests)",
+        "passed": true,
+        "details": "RPS: 34.97, Mean: 130.9ms, p50: 132ms, p95: 210ms, Errors: 0%",
+        "metrics": {
+          "path": "/api/auth/login",
+          "concurrency": 5,
+          "totalRequests": 20,
+          "successful": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "totalDurationSec": 0.572,
+          "rps": 34.97,
+          "latency": {
+            "minMs": 96,
+            "meanMs": 130.9,
+            "p50Ms": 132,
+            "p90Ms": 157,
+            "p95Ms": 210,
+            "p99Ms": 210,
+            "maxMs": 210
+          }
+        }
+      }
+    ]
+  },
+  "summary": {
+    "total": 35,
+    "passed": 35,
+    "failed": 0,
+    "warnings": 0
+  }
+}

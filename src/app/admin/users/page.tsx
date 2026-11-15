@@ -1,0 +1,145 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { UserManagementBoard } from '@/components/organisms/UserManagementBoard';
+import { getJudgesAction, createJudgeAction, updateJudgeAction, deleteJudgeAction } from '@/server/actions/judge.actions';
+import { getTeamsAction, createTeamAction, updateTeamAction, deleteTeamAction } from '@/server/actions/admin.team.actions';
+import { getPublicSettingsAction } from '@/server/actions/settings.actions';
+import { getMeAction } from '@/server/actions/auth.actions';
+import { getSubAdminsAction, createSubAdminAction, updateSubAdminAction, deleteSubAdminAction } from '@/server/actions/subadmin.actions';
+import { getRolesAction, createRoleAction, updateRoleAction, deleteRoleAction } from '@/server/actions/role.actions';
+
+export default function UsersPage() {
+  const [judges, setJudges] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [subAdmins, setSubAdmins] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [maxTeamSize, setMaxTeamSize] = useState(4);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    const [meRes, judgeRes, teamRes, settingsData] = await Promise.all([
+      getMeAction(),
+      getJudgesAction(),
+      getTeamsAction(),
+      getPublicSettingsAction()
+    ]);
+
+    if (meRes.success && meRes.user) {
+      setCurrentUserRole(meRes.user.role as string);
+      if (meRes.user.role === 'admin') {
+        const [subAdminRes, rolesRes] = await Promise.all([
+          getSubAdminsAction(),
+          getRolesAction()
+        ]);
+        if (subAdminRes.success) setSubAdmins((subAdminRes as any).subAdmins);
+        if (rolesRes.success) setRoles((rolesRes as any).roles);
+      }
+    }
+
+    if (judgeRes.success) setJudges((judgeRes as any).judges);
+    if (teamRes.success) setTeams((teamRes as any).teams);
+    if (settingsData.success && (settingsData as any).settings) {
+      setMaxTeamSize((settingsData as any).settings.maxTeamSize ?? 4);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleCreateJudge = async (data: any) => {
+    const res = await createJudgeAction(data);
+    return res.success;
+  };
+
+  const handleCreateTeam = async (data: any) => {
+    const res = await createTeamAction(data);
+    return res.success;
+  };
+
+  const handleDeleteJudge = async (id: string) => {
+    const res = await deleteJudgeAction(id);
+    return res.success;
+  };
+
+  const handleEditJudge = async (id: string, data: any) => {
+    const res = await updateJudgeAction(id, data);
+    return res.success;
+  };
+
+  const handleDeleteTeam = async (id: string) => {
+    const res = await deleteTeamAction(id);
+    return res.success;
+  };
+
+  const handleEditTeam = async (id: string, data: any) => {
+    const res = await updateTeamAction(id, data);
+    return res.success;
+  };
+
+  const handleCreateSubAdmin = async (data: any) => {
+    const res = await createSubAdminAction(data);
+    return res.success;
+  };
+
+  const handleEditSubAdmin = async (id: string, data: any) => {
+    const res = await updateSubAdminAction(id, data);
+    return res.success;
+  };
+
+  const handleDeleteSubAdmin = async (id: string) => {
+    const res = await deleteSubAdminAction(id);
+    return res.success;
+  };
+
+  const handleCreateRole = async (data: any) => {
+    const res = await createRoleAction(data);
+    return res.success;
+  };
+
+  const handleEditRole = async (id: string, data: any) => {
+    const res = await updateRoleAction(id, data);
+    return res.success;
+  };
+
+  const handleDeleteRole = async (id: string) => {
+    const res = await deleteRoleAction(id);
+    return res.success;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  return (
+    <UserManagementBoard 
+      judges={judges}
+      teams={teams}
+      subAdmins={subAdmins}
+      roles={roles}
+      currentUserRole={currentUserRole}
+      maxTeamSize={maxTeamSize}
+      onRefresh={fetchUsers}
+      onCreateJudge={handleCreateJudge}
+      onDeleteJudge={handleDeleteJudge}
+      onEditJudge={handleEditJudge}
+      onCreateTeam={handleCreateTeam}
+      onDeleteTeam={handleDeleteTeam}
+      onEditTeam={handleEditTeam}
+      onCreateSubAdmin={handleCreateSubAdmin}
+      onEditSubAdmin={handleEditSubAdmin}
+      onDeleteSubAdmin={handleDeleteSubAdmin}
+      onCreateRole={handleCreateRole}
+      onEditRole={handleEditRole}
+      onDeleteRole={handleDeleteRole}
+    />
+  );
+}

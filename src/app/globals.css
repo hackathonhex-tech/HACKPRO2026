@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --brand-primary: #3760f8;
+  --brand-primary-hover: #2546ed;
+  --brand-secondary: #d3fe4f;
+  --brand-secondary-hover: #c2ee38;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-primary: #3760f8;
+  --color-primary-hover: #2546ed;
+  --color-secondary: #d3fe4f;
+  --color-secondary-hover: #c2ee38;
+
+  --color-indigo-50: #eff4ff;
+  --color-indigo-100: #dce6fe;
+  --color-indigo-200: #bed0fe;
+  --color-indigo-300: #92b1fd;
+  --color-indigo-400: #5f8afa;
+  --color-indigo-500: #3760f8;
+  --color-indigo-600: #3760f8;
+  --color-indigo-700: #2546ed;
+  --color-indigo-800: #1d33d8;
+  --color-indigo-900: #1e2cb0;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}

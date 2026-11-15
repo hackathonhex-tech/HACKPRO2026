@@ -1,0 +1,187 @@
+@property --k {
+	syntax: '<number>';
+	initial-value: -1;
+	inherits: true;
+}
+
+@property --ang {
+	syntax: '<angle>';
+	initial-value: 0deg;
+	inherits: false;
+}
+
+.gal-wrapper {
+	height: calc(var(--n) * 100vh);
+	position: relative;
+	background: #f8fafc;
+	--dir: 0;
+	z-index: 10;
+}
+
+@media (max-aspect-ratio: 2/3) { 
+	.gal-wrapper { 
+		/* Force horizontal direction even on tall mobile screens */
+		--dir: 0; 
+	} 
+}
+
+@media (max-width: 768px) {
+	.gal-section {
+		--w: 55vw !important; /* Adjusted width for horizontal mobile carousel */
+	}
+}
+
+.gal-sticky {
+	position: sticky;
+	top: 0;
+	width: 100%;
+	height: 100vh;
+	height: 100dvh;
+	color: #1e293b;
+	font: clamp(.625em, 3vmin, 1.5em) / 1.25 saira, sans-serif;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 2rem;
+	overflow: hidden;
+}
+
+.gal-sticky::before {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: #f8fafc;
+	content: '';
+}
+
+.gal-main-header {
+	place-content: center;
+	place-items: center;
+	padding: .5em;
+	text-align: center;
+	text-wrap: balance;
+	display: grid;
+	z-index: 2;
+}
+
+.gal-main-header em { max-width: 32em; }
+
+.gal-main {
+	overflow: hidden;
+	perspective: 50em;
+	display: grid;
+	width: 100%;
+}
+
+.gal-section, .gal-article { transform-style: preserve-3d; }
+
+.gal-section {
+	--r: calc(2 + var(--dir)) / 3;
+	--w: clamp(8em, min(65vh, 40vw), 28em);
+	--z: calc(var(--f, 1.25) * -.5 * var(--w) / tan(.5turn / var(--n)));
+	place-self: center;
+	translate: 0 0 var(--z);
+	rotate: var(--dir) calc(1 - var(--dir)) 0 calc((var(--k) + .5) * -1turn);
+	display: grid;
+}
+
+.gal-article, .gal-article-header, .gal-figure, .gal-figure img, .gal-figure figcaption { grid-area: 1 / 1; }
+
+.gal-article {
+	--j: calc(var(--i) / var(--n));
+	--dif-lin: calc(var(--j) - mod(var(--k) + 1, 1));
+	--abs-lin: abs(var(--dif-lin));
+	--dif-mid: calc(.5 - var(--abs-lin));
+	--abs-mid: abs(var(--dif-mid));
+	--dif-arc: calc(2 * (.5 - var(--abs-mid)));
+	--lim: .35;
+	--sel: max(0, calc((var(--lim) - var(--dif-arc)) / var(--lim)));
+	--out: calc(1 - var(--sel));
+	--hov: 0;
+	width: var(--w);
+	aspect-ratio: var(--r);
+	transform: 
+		rotate3d(var(--dir), calc(1 - var(--dir)), 0, calc(var(--j) * 1turn))
+		translatez(var(--z))
+		rotate(calc(var(--dir) * .5turn));
+	display: grid;
+}
+
+.gal-article-header { rotate: y calc((1 + var(--hov)) * .5turn); }
+	
+.gal-article:hover, .gal-article:focus-within { --hov: round(var(--sel)); }
+
+@supports not (scale: abs(-1)) {
+	.gal-article {
+		--abs-lin: max(var(--dif-lin), -1 * var(--dif-lin));
+		--abs-mid: max(var(--dif-mid), -1 * var(--dif-mid));
+	}
+}
+
+.gal-article-header, .gal-figure {
+	--ang: calc(-45deg + var(--hov) * 180deg);
+	overflow: hidden;
+	position: relative;
+	border: solid 4px transparent;
+	border-radius: .5em;
+	backface-visibility: hidden;
+	box-shadow: 5px 5px 25px rgba(0,0,0,0.15);
+	background: 
+		linear-gradient(#f8fafc 0 0) padding-box, 
+		repeating-conic-gradient(from var(--ang), 
+				#0000 0% 15%, 
+				color-mix(in srgb, 
+					#4f46e5 calc(var(--sel) * 100%), #e2e8f0) 20% 30%, 
+				#0000 35% 50%) 
+			border-box #ffffff;
+	transition: .35s ease-out;
+	transition-property: rotate, --ang, transform;
+	display: grid;
+}
+
+.gal-article:hover .gal-figure {
+	transform: translateZ(20px) scale(1.05);
+	box-shadow: 10px 10px 40px rgba(0,0,0,0.25);
+}
+
+.gal-article-header::after, .gal-figure::after {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	content: '';
+}
+
+.gal-article h2, .gal-main-header em, .gal-figure img, .gal-figure a { pointer-events: auto; }
+
+.gal-article h2, .gal-main-header em, .gal-figure figcaption {
+	opacity: round(up, var(--sel));
+	text-shadow: 1px 1px 1px #0006;
+}
+
+.gal-article h2 { font-size: 1.125em; place-self: center; }
+
+.gal-figure {
+	/* Removed rotation on hover */
+}
+
+.gal-figure img {
+	width: 100%;
+	height: 100%;
+	aspect-ratio: var(--r);
+	object-fit: cover;
+	object-position: var(--pos, 50% 50%);
+}
+
+.gal-figure figcaption {
+	align-self: end;
+	padding: .5em;
+	background: #fff3;
+	color: #040404;
+	font: Max(.75rem, .75em) caveat, cursive;
+	text-align: right;
+	backdrop-filter: blur(5px) brightness(1.5);
+	z-index: 2;
+}
+
+.gal-figure figcaption a { color: #370617; }
