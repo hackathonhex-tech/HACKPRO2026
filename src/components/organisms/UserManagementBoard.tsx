@@ -1121,30 +1121,39 @@ export function UserManagementBoard({
             {/* Team Lead Section */}
             <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-700/50">
               <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center"><User className="w-4 h-4 mr-2" /> Team Lead</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="min-w-0">
                   <p className="text-xs text-slate-400 font-bold mb-1">Name</p>
-                  <p className="font-medium text-slate-900 dark:text-white">{viewingTeam.leadName || 'Not provided'}</p>
+                  <p className="font-medium text-slate-900 dark:text-white truncate">{viewingTeam.leadName || 'Not provided'}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-slate-400 font-bold mb-1">Superset ID</p>
-                  <p className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{viewingTeam.leadSupersetId || viewingTeam.supersetId || viewingTeam.members?.[0]?.supersetId || 'Not provided'}</p>
+                  <p className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate">{viewingTeam.leadSupersetId || viewingTeam.supersetId || viewingTeam.members?.[0]?.supersetId || 'Not provided'}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-slate-400 font-bold mb-1">Email</p>
-                  <p className="font-medium text-slate-900 dark:text-white flex items-center"><Mail className="w-3 h-3 mr-1.5 opacity-50" /> {viewingTeam.leadEmail || 'Not provided'}</p>
+                  <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
+                    <Mail className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
+                    <span className="break-all text-xs sm:text-sm">{viewingTeam.leadEmail || 'Not provided'}</span>
+                  </p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-slate-400 font-bold mb-1">Phone</p>
-                  <p className="font-medium text-slate-900 dark:text-white flex items-center"><Phone className="w-3 h-3 mr-1.5 opacity-50" /> {viewingTeam.leadPhone || 'Not provided'}</p>
+                  <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
+                    <Phone className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
+                    <span className="truncate">{viewingTeam.leadPhone || 'Not provided'}</span>
+                  </p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-slate-400 font-bold mb-1">College</p>
-                  <p className="font-medium text-slate-900 dark:text-white flex items-center"><Building className="w-3 h-3 mr-1.5 opacity-50" /> {viewingTeam.collegeName || 'Not provided'}</p>
+                  <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
+                    <Building className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
+                    <span className="truncate" title={viewingTeam.collegeName}>{viewingTeam.collegeName || 'Not provided'}</span>
+                  </p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-slate-400 font-bold mb-1">Department</p>
-                  <p className="font-medium text-slate-900 dark:text-white">{viewingTeam.department || 'Not provided'}</p>
+                  <p className="font-medium text-slate-900 dark:text-white truncate" title={viewingTeam.department}>{viewingTeam.department || 'Not provided'}</p>
                 </div>
               </div>
             </div>
@@ -1175,24 +1184,24 @@ export function UserManagementBoard({
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                        <div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-sm">
+                        <div className="min-w-0">
                           <span className="text-xs text-slate-400 block mb-0.5">Superset ID</span>
                           <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate block">{m.supersetId || '-'}</span>
                         </div>
-                        <div>
+                        <div className="min-w-0 sm:col-span-1 md:col-span-2 lg:col-span-1">
                           <span className="text-xs text-slate-400 block mb-0.5">Email</span>
-                          <span className="text-slate-700 dark:text-slate-300 truncate block" title={m.email}>{m.email || '-'}</span>
+                          <span className="text-slate-700 dark:text-slate-300 break-all block text-xs" title={m.email}>{m.email || '-'}</span>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-xs text-slate-400 block mb-0.5">Phone</span>
                           <span className="text-slate-700 dark:text-slate-300 truncate block">{m.phone || (m.contact && !m.contact.includes('@') ? m.contact : '-')}</span>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-xs text-slate-400 block mb-0.5">College</span>
                           <span className="text-slate-700 dark:text-slate-300 truncate block" title={m.college}>{m.college || '-'}</span>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-xs text-slate-400 block mb-0.5">Department</span>
                           <span className="text-slate-700 dark:text-slate-300 truncate block" title={m.department}>{m.department || '-'}</span>
                         </div>

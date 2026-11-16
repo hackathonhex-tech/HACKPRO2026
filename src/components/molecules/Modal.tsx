@@ -45,7 +45,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
                 className="rounded-full shrink-0 ml-4"
               />
             </div>
-            <div className="p-6 overflow-y-auto flex-1">
+            <div className="p-6 overflow-y-auto overflow-x-hidden flex-1">
               {children}
             </div>
           </motion.div>
