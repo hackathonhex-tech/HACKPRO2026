@@ -13,7 +13,7 @@ export async function getPublicSettingsAction() {
 
 export async function getAdminSettingsAction() {
   try {
-    const auth = await verifyApiAuth(['admin', 'sub-admin'], 'manage_settings');
+    const auth = await verifyApiAuth(['admin', 'sub-admin'], ['manage_settings', 'registration_fields']);
     if (!auth.authenticated) return { success: false, message: auth.error };
     
     return await SettingsService.getAdminSettings();
@@ -35,7 +35,7 @@ export async function updateAdminSettingsAction(body: any) {
 
 export async function updateRegistrationFieldsConfigAction(config: any) {
   try {
-    const auth = await verifyApiAuth(['admin', 'sub-admin'], 'manage_settings');
+    const auth = await verifyApiAuth(['admin', 'sub-admin'], ['manage_settings', 'registration_fields']);
     if (!auth.authenticated) return { success: false, message: auth.error };
     
     return await SettingsService.updateRegistrationFieldsConfig(config);

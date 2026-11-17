@@ -9,7 +9,7 @@ const adminNav = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, permission: 'dashboard' },
   { name: 'QR Scanner', href: '/admin/scanner', icon: Scan, permission: 'scanner' },
   { name: 'User Management', href: '/admin/users', icon: Users, permission: 'manage_users' },
-  { name: 'Registration Setup', href: '/admin/registration-fields', icon: FileEdit, permission: 'manage_settings' },
+  { name: 'Registration Setup', href: '/admin/registration-fields', icon: FileEdit, permission: 'registration_fields' },
   { name: 'Assign Judges', href: '/admin/assign', icon: Users, permission: 'assign_judges' },
   { name: 'Attendance', href: '/admin/attendance', icon: Clock, permission: 'attendance' },
   { name: 'Round Selection', href: '/admin/round-qualification', icon: Award, permission: 'round_selection' },
@@ -25,6 +25,7 @@ function checkPermission(perms: string[], permission?: string): boolean {
   if (!permission) return true;
   if (perms.includes(permission) || perms.includes('admin') || perms.includes('*')) return true;
   // Backward compatibility mappings
+  if (permission === 'registration_fields' && (perms.includes('manage_settings') || perms.includes('manage_users'))) return true;
   if (permission === 'assign_judges' && perms.includes('manage_users')) return true;
   if (permission === 'attendance' && perms.includes('manage_users')) return true;
   if (permission === 'round_selection' && perms.includes('manage_problems')) return true;

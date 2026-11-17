@@ -122,6 +122,7 @@ export function UserManagementBoard({
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'scanner', label: 'QR Scanner' },
     { id: 'manage_users', label: 'User Management' },
+    { id: 'registration_fields', label: 'Registration Setup' },
     { id: 'assign_judges', label: 'Assign Judges' },
     { id: 'attendance', label: 'Attendance' },
     { id: 'round_selection', label: 'Round Selection' },

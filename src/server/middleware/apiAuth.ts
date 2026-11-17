@@ -33,6 +33,7 @@ export async function verifyApiAuth(requiredRole?: string | string[], requiredPe
         const hasPerm = reqList.some(req => {
           if (perms.includes(req) || perms.includes('admin') || perms.includes('*')) return true;
           // Backward compatibility mappings
+          if (req === 'registration_fields' && (perms.includes('manage_settings') || perms.includes('manage_users'))) return true;
           if (req === 'assign_judges' && perms.includes('manage_users')) return true;
           if (req === 'attendance' && perms.includes('manage_users')) return true;
           if (req === 'round_selection' && perms.includes('manage_problems')) return true;
