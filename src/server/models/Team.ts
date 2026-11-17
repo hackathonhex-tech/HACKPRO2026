@@ -8,7 +8,8 @@ const TeamMemberSchema = new mongoose.Schema({
   phone: { type: String },
   college: { type: String },
   department: { type: String },
-  attendance: { type: Boolean, default: false }
+  attendance: { type: Boolean, default: false },
+  customFields: { type: mongoose.Schema.Types.Mixed, default: {} }
 });
 
 const TeamSchema = new mongoose.Schema({
@@ -22,6 +23,7 @@ const TeamSchema = new mongoose.Schema({
   collegeName: { type: String },
   department: { type: String },
   members: [TeamMemberSchema],
+  customFields: { type: mongoose.Schema.Types.Mixed, default: {} },
   problemStatementId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProblemStatement' },
   selectedStack: { type: String },
   qrCodeString: { type: String, required: true },

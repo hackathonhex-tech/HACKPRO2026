@@ -1,52 +1,94 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { UserPlus, CheckCircle, Users, Plus, Trash2 } from 'lucide-react';
+import { UserPlus, CheckCircle, Users, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Input } from '../atoms/Input';
 import { Label } from '../atoms/Label';
 import { Card } from '../atoms/Card';
 import { registerTeamAction } from '@/server/actions/team.actions';
 import { getPublicSettingsAction } from '@/server/actions/settings.actions';
+import { FormFieldConfig, RegistrationFieldsConfig } from './RegistrationFieldConfigBoard';
 
 interface MemberForm {
   name: string;
   supersetId: string;
   email: string;
   phone: string;
+  customFields: Record<string, any>;
 }
 
-const emptyMember = (): MemberForm => ({ name: '', supersetId: '', email: '', phone: '' });
+const DEFAULT_TEAM_FIELDS: FormFieldConfig[] = [
+  { id: 'name', key: 'name', label: 'Team Name', type: 'text', placeholder: 'e.g. Code Ninjas', required: true, enabled: true, isCustom: false },
+  { id: 'collegeName', key: 'collegeName', label: 'College / Institution', type: 'text', placeholder: 'e.g. MIT Chennai', required: true, enabled: true, isCustom: false },
+  { id: 'department', key: 'department', label: 'Department', type: 'text', placeholder: 'e.g. Computer Science', required: true, enabled: true, isCustom: false }
+];
+
+const DEFAULT_MEMBER_FIELDS: FormFieldConfig[] = [
+  { id: 'name', key: 'name', label: 'Full Name', type: 'text', placeholder: 'e.g. John Doe', required: true, enabled: true, isCustom: false },
+  { id: 'supersetId', key: 'supersetId', label: 'Superset ID / Roll No', type: 'text', placeholder: 'e.g. 123456', required: true, enabled: true, isCustom: false },
+  { id: 'email', key: 'email', label: 'Email ID', type: 'email', placeholder: 'e.g. john@college.edu', required: true, enabled: true, isCustom: false },
+  { id: 'phone', key: 'phone', label: 'Phone Number', type: 'tel', placeholder: 'e.g. 9876543210', required: true, enabled: true, isCustom: false }
+];
+
+const emptyMember = (): MemberForm => ({
+  name: '',
+  supersetId: '',
+  email: '',
+  phone: '',
+  customFields: {}
+});
 
 export const RegistrationForm: React.FC = () => {
+  const router = useRouter();
+
+  // Dynamic fields configuration from Settings
+  const [teamFields, setTeamFields] = useState<FormFieldConfig[]>(DEFAULT_TEAM_FIELDS);
+  const [memberFields, setMemberFields] = useState<FormFieldConfig[]>(DEFAULT_MEMBER_FIELDS);
+
+  // Section 1: Team Info
   const [teamName, setTeamName] = useState('');
   const [collegeName, setCollegeName] = useState('');
   const [department, setDepartment] = useState('');
+  const [teamCustomFields, setTeamCustomFields] = useState<Record<string, any>>({});
 
+  // Section 2: Team Lead
   const [leadName, setLeadName] = useState('');
   const [leadEmail, setLeadEmail] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
   const [leadSupersetId, setLeadSupersetId] = useState('');
+  const [leadCustomFields, setLeadCustomFields] = useState<Record<string, any>>({});
 
-  const [members, setMembers] = useState<MemberForm[]>([emptyMember(), emptyMember(), emptyMember()]); // default 3 members
-  const [_maxTeamSize, setMaxTeamSize] = useState(4);
+  // Section 3: Members
+  const [members, setMembers] = useState<MemberForm[]>([emptyMember(), emptyMember(), emptyMember()]);
+  const [maxTeamSize, setMaxTeamSize] = useState(4);
 
-  const [message, setMessage] = useState<{ text: string, type: 'error' | 'success' } | null>(null);
+  // System states
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState<boolean | null>(null);
+  const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
   const [loading, setLoading] = useState(false);
   const [registeredTeam, setRegisteredTeam] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const router = useRouter();
 
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState<boolean | null>(null);
-
-  React.useEffect(() => {
+  useEffect(() => {
     getPublicSettingsAction()
       .then((data: any) => {
-        if (data.success && 'settings' in data && data.settings) {
+        if (data.success && data.settings) {
           const size = data.settings.maxTeamSize ?? 4;
           setMaxTeamSize(size);
           setIsRegistrationOpen(data.settings.isRegistrationOpen ?? true);
+
+          if (data.settings.registrationFieldsConfig) {
+            const config: RegistrationFieldsConfig = data.settings.registrationFieldsConfig;
+            if (config.teamFields && config.teamFields.length > 0) {
+              setTeamFields(config.teamFields);
+            }
+            if (config.memberFields && config.memberFields.length > 0) {
+              setMemberFields(config.memberFields);
+            }
+          }
+
           const requiredMembers = Math.max(0, size - 1);
           setMembers(Array.from({ length: requiredMembers }, () => emptyMember()));
         } else {
@@ -54,10 +96,123 @@ export const RegistrationForm: React.FC = () => {
         }
       })
       .catch(err => {
-        console.error('Failed to fetch settings:', err);
+        console.error('Failed to fetch public settings:', err);
         setIsRegistrationOpen(true);
       });
   }, []);
+
+  // Helper getters & setters for Section 1 (Team)
+  const getTeamFieldValue = (key: string): any => {
+    if (key === 'name') return teamName;
+    if (key === 'collegeName') return collegeName;
+    if (key === 'department') return department;
+    return teamCustomFields[key] || '';
+  };
+
+  const setTeamFieldValue = (key: string, value: any) => {
+    if (key === 'name') setTeamName(value);
+    else if (key === 'collegeName') setCollegeName(value);
+    else if (key === 'department') setDepartment(value);
+    else setTeamCustomFields(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Helper getters & setters for Section 2 (Lead)
+  const getLeadFieldValue = (key: string): any => {
+    if (key === 'name') return leadName;
+    if (key === 'supersetId') return leadSupersetId;
+    if (key === 'email') return leadEmail;
+    if (key === 'phone') return leadPhone;
+    return leadCustomFields[key] || '';
+  };
+
+  const setLeadFieldValue = (key: string, value: any) => {
+    if (key === 'name') setLeadName(value);
+    else if (key === 'supersetId') setLeadSupersetId(value);
+    else if (key === 'email') setLeadEmail(value);
+    else if (key === 'phone') setLeadPhone(value);
+    else setLeadCustomFields(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Helper getters & setters for Section 3 (Members)
+  const getMemberFieldValue = (index: number, key: string): any => {
+    const m = members[index];
+    if (!m) return '';
+    if (key === 'name') return m.name;
+    if (key === 'supersetId') return m.supersetId;
+    if (key === 'email') return m.email;
+    if (key === 'phone') return m.phone;
+    return m.customFields?.[key] || '';
+  };
+
+  const setMemberFieldValue = (index: number, key: string, value: any) => {
+    setMembers(prev => {
+      const copy = [...prev];
+      const m = { ...copy[index] };
+      if (key === 'name') m.name = value;
+      else if (key === 'supersetId') m.supersetId = value;
+      else if (key === 'email') m.email = value;
+      else if (key === 'phone') m.phone = value;
+      else {
+        m.customFields = { ...(m.customFields || {}), [key]: value };
+      }
+      copy[index] = m;
+      return copy;
+    });
+  };
+
+  // Generic Field Input Renderer
+  const renderFieldInput = (
+    field: FormFieldConfig,
+    value: any,
+    onChange: (val: any) => void
+  ) => {
+    if (field.type === 'select') {
+      return (
+        <select
+          required={field.required}
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#3760F8] transition-all"
+        >
+          <option value="">{field.placeholder || `Select ${field.label}`}</option>
+          {field.options?.map((opt, idx) => (
+            <option key={idx} value={opt}>{opt}</option>
+          ))}
+        </select>
+      );
+    }
+
+    if (field.type === 'textarea') {
+      return (
+        <textarea
+          required={field.required}
+          rows={2}
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#3760F8] transition-all"
+        />
+      );
+    }
+
+    return (
+      <Input
+        type={field.type}
+        required={field.required}
+        value={value || ''}
+        onChange={e => {
+          let v = e.target.value;
+          if (field.key === 'phone' || field.type === 'tel') {
+            v = v.replace(/\D/g, '').slice(0, 10);
+          } else if (field.key === 'supersetId') {
+            v = v.replace(/\D/g, '');
+          }
+          onChange(v);
+        }}
+        placeholder={field.placeholder}
+      />
+    );
+  };
 
   if (isRegistrationOpen === false) {
     return (
@@ -76,59 +231,58 @@ export const RegistrationForm: React.FC = () => {
   if (isRegistrationOpen === null) {
     return (
       <div className="flex justify-center py-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3760F8]"></div>
       </div>
     );
   }
 
-  const updateMember = (index: number, field: keyof MemberForm, value: string) => {
-    const updated = [...members];
-    updated[index] = { ...updated[index], [field]: value };
-    setMembers(updated);
-  };
-
+  // Pre-submission validation
   const handlePreviewClick = (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
 
-    // Basic validation before preview
-    if (!teamName.trim() || !collegeName.trim() || !department.trim()) {
-      setMessage({ text: 'Please fill in all team information.', type: 'error' });
-      return;
-    }
-    if (!leadName.trim() || !leadEmail.trim() || !leadPhone.trim() || !leadSupersetId.trim()) {
-      setMessage({ text: 'Please fill in all team lead details including Superset ID.', type: 'error' });
-      return;
-    }
-
-    const supersetRegex = /^[0-9]+$/;
-    const phoneRegex = /^[0-9]{10}$/;
-
-    if (!supersetRegex.test(leadSupersetId.trim())) {
-      setMessage({ text: 'Team Lead Superset ID must be a number.', type: 'error' });
-      return;
-    }
-    if (!phoneRegex.test(leadPhone.trim())) {
-      setMessage({ text: 'Team Lead Phone must be exactly 10 digits.', type: 'error' });
-      return;
+    // Section 1 validation
+    for (const f of teamFields.filter(f => f.enabled && f.required)) {
+      const val = getTeamFieldValue(f.key);
+      if (!val || !val.toString().trim()) {
+        setMessage({ text: `Please fill in required team field: "${f.label}".`, type: 'error' });
+        return;
+      }
     }
 
+    // Section 2 validation (Team Lead)
+    for (const f of memberFields.filter(f => f.enabled && f.required)) {
+      const val = getLeadFieldValue(f.key);
+      if (!val || !val.toString().trim()) {
+        setMessage({ text: `Team Lead: Please fill in required field "${f.label}".`, type: 'error' });
+        return;
+      }
+      if (f.key === 'supersetId' && !/^[0-9]+$/.test(val.toString().trim())) {
+        setMessage({ text: `Team Lead ${f.label} must be a number.`, type: 'error' });
+        return;
+      }
+      if ((f.key === 'phone' || f.type === 'tel') && !/^[0-9]{10}$/.test(val.toString().trim())) {
+        setMessage({ text: `Team Lead ${f.label} must be exactly 10 digits.`, type: 'error' });
+        return;
+      }
+    }
+
+    // Section 3 validation (Members)
     for (let i = 0; i < members.length; i++) {
-      if (!members[i].name.trim()) {
-        setMessage({ text: `Member ${i + 2}: Name is required.`, type: 'error' });
-        return;
-      }
-      if (!members[i].supersetId.trim()) {
-        setMessage({ text: `Member ${i + 2}: Superset ID is required.`, type: 'error' });
-        return;
-      }
-      if (!supersetRegex.test(members[i].supersetId.trim())) {
-        setMessage({ text: `Member ${i + 2}: Superset ID must be a number.`, type: 'error' });
-        return;
-      }
-      if (members[i].phone && !phoneRegex.test(members[i].phone.trim())) {
-        setMessage({ text: `Member ${i + 2}: Phone must be exactly 10 digits.`, type: 'error' });
-        return;
+      for (const f of memberFields.filter(f => f.enabled && f.required)) {
+        const val = getMemberFieldValue(i, f.key);
+        if (!val || !val.toString().trim()) {
+          setMessage({ text: `Member ${i + 2}: Please fill in required field "${f.label}".`, type: 'error' });
+          return;
+        }
+        if (f.key === 'supersetId' && !/^[0-9]+$/.test(val.toString().trim())) {
+          setMessage({ text: `Member ${i + 2}: ${f.label} must be a number.`, type: 'error' });
+          return;
+        }
+        if ((f.key === 'phone' || f.type === 'tel') && val.toString().trim() && !/^[0-9]{10}$/.test(val.toString().trim())) {
+          setMessage({ text: `Member ${i + 2}: ${f.label} must be exactly 10 digits.`, type: 'error' });
+          return;
+        }
       }
     }
 
@@ -148,6 +302,8 @@ export const RegistrationForm: React.FC = () => {
       leadEmail,
       leadPhone,
       leadSupersetId,
+      customFields: teamCustomFields,
+      leadCustomFields,
       members: members.map(m => ({
         name: m.name,
         supersetId: m.supersetId,
@@ -156,6 +312,7 @@ export const RegistrationForm: React.FC = () => {
         phone: m.phone,
         college: collegeName,
         department: department,
+        customFields: m.customFields
       }))
     };
 
@@ -172,55 +329,89 @@ export const RegistrationForm: React.FC = () => {
         setMessage({ text: data.message || 'Registration failed.', type: 'error' });
       }
     } catch {
-      setMessage({ text: 'An error occurred.', type: 'error' });
+      setMessage({ text: 'An unexpected error occurred during registration.', type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
+  const visibleTeamFields = teamFields.filter(f => f.enabled);
+  const visibleMemberFields = memberFields.filter(f => f.enabled);
+
+  // Review & Confirmation Screen
   if (showPreview && !registeredTeam) {
     return (
       <div className="space-y-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 p-8">
           <div className="flex items-center justify-between mb-8 border-b border-slate-100 dark:border-slate-700/50 pb-6">
             <div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white">Review Registration</h2>
-              <p className="text-slate-500 mt-1">Please verify all details before submitting.</p>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white">Review Registration Details</h2>
+              <p className="text-slate-500 mt-1">Please review all submitted information carefully before final submission.</p>
             </div>
           </div>
 
           <div className="space-y-8">
+            {/* Review Section 1 */}
             <div>
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center"><div className="w-6 h-6 rounded-md bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mr-2">1</div> Team Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                <div><span className="text-xs text-slate-500 block mb-1">Team Name</span><span className="font-bold text-slate-900 dark:text-white">{teamName}</span></div>
-                <div><span className="text-xs text-slate-500 block mb-1">College</span><span className="font-bold text-slate-900 dark:text-white">{collegeName}</span></div>
-                <div><span className="text-xs text-slate-500 block mb-1">Department</span><span className="font-bold text-slate-900 dark:text-white">{department}</span></div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center"><div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mr-2">2</div> Team Lead</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                <div className="min-w-0"><span className="text-xs text-slate-500 block mb-1">Full Name</span><span className="font-bold text-slate-900 dark:text-white block truncate" title={leadName}>{leadName}</span></div>
-                <div className="min-w-0"><span className="text-xs text-slate-500 block mb-1">Superset ID</span><span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 block truncate" title={leadSupersetId}>{leadSupersetId}</span></div>
-                <div className="min-w-0"><span className="text-xs text-slate-500 block mb-1">Email</span><span className="font-bold text-slate-900 dark:text-white block truncate" title={leadEmail}>{leadEmail}</span></div>
-                <div className="min-w-0"><span className="text-xs text-slate-500 block mb-1">Phone</span><span className="font-bold text-slate-900 dark:text-white block truncate">{leadPhone}</span></div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center"><div className="w-6 h-6 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center mr-2">3</div> Team Members</h3>
-              <div className="space-y-4">
-                {members.map((member, idx) => (
-                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700/50 items-center text-sm">
-                    <div className="font-bold text-slate-900 dark:text-white min-w-0 truncate"><span className="text-xs text-slate-400 mr-2">#{idx + 2}</span> {member.name}</div>
-                    <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400 min-w-0 truncate">{member.supersetId || '-'}</div>
-                    <div className="text-slate-600 dark:text-slate-300 min-w-0 truncate" title={member.email}>{member.email || '-'}</div>
-                    <div className="text-slate-600 dark:text-slate-300 min-w-0 truncate">{member.phone || '-'}</div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center">
+                <div className="w-6 h-6 rounded-md bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mr-2">1</div>
+                Team Information
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                {visibleTeamFields.map(f => (
+                  <div key={f.id} className="min-w-0">
+                    <span className="text-xs text-slate-500 block mb-1">{f.label}</span>
+                    <span className="font-bold text-slate-900 dark:text-white block break-words">
+                      {getTeamFieldValue(f.key) || '-'}
+                    </span>
                   </div>
                 ))}
-                {members.length === 0 && <div className="text-sm text-slate-500 italic">No additional team members.</div>}
+              </div>
+            </div>
+
+            {/* Review Section 2 */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center">
+                <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mr-2">2</div>
+                Team Lead (Member 1)
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                {visibleMemberFields.map(f => (
+                  <div key={f.id} className="min-w-0">
+                    <span className="text-xs text-slate-500 block mb-1">{f.label}</span>
+                    <span className="font-bold text-slate-900 dark:text-white block break-words">
+                      {getLeadFieldValue(f.key) || '-'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Review Section 3 */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center">
+                <div className="w-6 h-6 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center mr-2">3</div>
+                Team Members ({members.length})
+              </h3>
+              <div className="space-y-4">
+                {members.map((_, idx) => (
+                  <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block mb-3">
+                      Member #{idx + 2}
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      {visibleMemberFields.map(f => (
+                        <div key={f.id} className="min-w-0">
+                          <span className="text-xs text-slate-400 block mb-0.5">{f.label}</span>
+                          <span className="font-bold text-slate-900 dark:text-white block break-words text-sm">
+                            {getMemberFieldValue(idx, f.key) || '-'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {members.length === 0 && <div className="text-sm text-slate-500 italic">No additional team members added.</div>}
               </div>
             </div>
           </div>
@@ -244,9 +435,9 @@ export const RegistrationForm: React.FC = () => {
               type="button" 
               onClick={handleRegister}
               disabled={loading}
-              className="flex-1 px-6 py-4 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20 flex items-center justify-center disabled:opacity-50"
+              className="flex-1 px-6 py-4 rounded-xl font-bold bg-[#3760F8] text-white hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20 flex items-center justify-center disabled:opacity-50"
             >
-              {loading ? 'Submitting...' : 'Confirm & Submit'}
+              {loading ? 'Submitting Registration...' : 'Confirm & Submit'}
             </button>
           </div>
         </motion.div>
@@ -262,19 +453,16 @@ export const RegistrationForm: React.FC = () => {
           <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center mr-3 text-indigo-600 dark:text-indigo-400 text-sm font-black">1</div>
           Team Information
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div>
-            <Label>Team Name *</Label>
-            <Input type="text" required value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="e.g. Code Ninjas" />
-          </div>
-          <div>
-            <Label>College / Institution *</Label>
-            <Input type="text" required value={collegeName} onChange={e => setCollegeName(e.target.value)} placeholder="e.g. MIT Chennai" />
-          </div>
-          <div>
-            <Label>Department *</Label>
-            <Input type="text" required value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Computer Science" />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {visibleTeamFields.map(field => (
+            <div key={field.id} className={field.type === 'textarea' ? 'md:col-span-2 lg:col-span-3' : ''}>
+              <Label>
+                {field.label} {field.required && <span className="text-red-500">*</span>}
+              </Label>
+              {renderFieldInput(field, getTeamFieldValue(field.key), val => setTeamFieldValue(field.key, val))}
+              {field.description && <span className="text-[11px] text-slate-400 block mt-1">{field.description}</span>}
+            </div>
+          ))}
         </div>
       </Card>
 
@@ -284,23 +472,16 @@ export const RegistrationForm: React.FC = () => {
           <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center mr-3 text-emerald-600 dark:text-emerald-400 text-sm font-black">2</div>
           Team Lead Details (Member 1)
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div>
-            <Label>Full Name *</Label>
-            <Input type="text" required value={leadName} onChange={e => setLeadName(e.target.value)} placeholder="e.g. John Doe" />
-          </div>
-          <div>
-            <Label>Superset ID *</Label>
-            <Input type="text" required value={leadSupersetId} onChange={e => setLeadSupersetId(e.target.value.replace(/\D/g, ''))} pattern="^[0-9]+$" title="Must be a number" placeholder="e.g. 123456" />
-          </div>
-          <div>
-            <Label>Email ID *</Label>
-            <Input type="email" required value={leadEmail} onChange={e => setLeadEmail(e.target.value)} placeholder="e.g. john@college.edu" />
-          </div>
-          <div>
-            <Label>Phone Number *</Label>
-            <Input type="tel" required value={leadPhone} onChange={e => setLeadPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} pattern="^[0-9]{10}$" title="Must be exactly 10 digits" placeholder="e.g. 9876543210" />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {visibleMemberFields.map(field => (
+            <div key={field.id} className={field.type === 'textarea' ? 'md:col-span-2 lg:col-span-3' : ''}>
+              <Label>
+                {field.label} {field.required && <span className="text-red-500">*</span>}
+              </Label>
+              {renderFieldInput(field, getLeadFieldValue(field.key), val => setLeadFieldValue(field.key, val))}
+              {field.description && <span className="text-[11px] text-slate-400 block mt-1">{field.description}</span>}
+            </div>
+          ))}
         </div>
         <p className="text-xs text-slate-400 mt-4 ml-1">📧 Your email will be your login ID. Your Team ID will be your password.</p>
       </Card>
@@ -312,50 +493,55 @@ export const RegistrationForm: React.FC = () => {
             <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center mr-3 text-amber-600 dark:text-amber-400 text-sm font-black">3</div>
             Team Members
           </h2>
-          {members.length < (_maxTeamSize - 1) && (
-            <Button type="button" variant="outline" onClick={() => setMembers([...members, emptyMember()])} className="text-sm py-1.5 px-3 border-dashed border-2 text-indigo-600 dark:text-indigo-400">
+          {members.length < (maxTeamSize - 1) && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setMembers([...members, emptyMember()])} 
+              className="text-sm py-1.5 px-3 border-dashed border-2 text-[#3760F8] border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            >
               <Plus className="w-4 h-4 mr-1" /> Add Member
             </Button>
           )}
         </div>
         
         <div className="space-y-6">
-          {members.map((member, index) => (
+          {members.map((_, index) => (
             <div key={index} className="relative p-5 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 group">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center">
-                  <Users className="w-4 h-4 mr-1.5" /> Member {index + 2}
+                  <Users className="w-4 h-4 mr-1.5 text-[#3760F8]" /> Member {index + 2}
                 </span>
                 <button 
                   type="button" 
                   onClick={() => setMembers(members.filter((_, i) => i !== index))}
-                  className="text-slate-400 hover:text-red-500 transition-colors"
+                  className="text-slate-400 hover:text-red-500 transition-colors p-1"
                   title="Remove Member"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <Label>Full Name *</Label>
-                  <Input type="text" required value={member.name} onChange={e => updateMember(index, 'name', e.target.value)} placeholder="Member name" />
-                </div>
-                <div>
-                  <Label>Superset ID *</Label>
-                  <Input type="text" required value={member.supersetId} onChange={e => updateMember(index, 'supersetId', e.target.value.replace(/\D/g, ''))} pattern="^[0-9]+$" title="Must be a number" placeholder="e.g. 987654" />
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input type="email" value={member.email} onChange={e => updateMember(index, 'email', e.target.value)} placeholder="Email address" />
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input type="tel" value={member.phone} onChange={e => updateMember(index, 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))} pattern="^[0-9]{10}$" title="Must be exactly 10 digits" placeholder="Phone number" />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {visibleMemberFields.map(field => (
+                  <div key={field.id} className={field.type === 'textarea' ? 'md:col-span-2 lg:col-span-3' : ''}>
+                    <Label>
+                      {field.label} {field.required && <span className="text-red-500">*</span>}
+                    </Label>
+                    {renderFieldInput(
+                      field, 
+                      getMemberFieldValue(index, field.key), 
+                      val => setMemberFieldValue(index, field.key, val)
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           ))}
-          {members.length === 0 && <div className="text-sm text-slate-500 text-center py-4 italic">No additional members added. Your team size will be 1 (Lead only).</div>}
+          {members.length === 0 && (
+            <div className="text-sm text-slate-500 text-center py-4 italic">
+              No additional members added. Your team size will be 1 (Lead only).
+            </div>
+          )}
         </div>
       </Card>
 
@@ -370,14 +556,18 @@ export const RegistrationForm: React.FC = () => {
               : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20'
           }`}
         >
-          {message.type === 'success' && <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />}
+          {message.type === 'success' ? (
+            <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+          )}
           {message.text}
         </motion.div>
       )}
 
       {registeredTeam && (
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-2xl p-6 mb-6 text-center">
-          <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-2">Your credentials for login:</p>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-2xl p-6 mb-6 text-center">
+          <p className="text-sm font-bold text-[#3760F8] mb-2">Your credentials for login:</p>
           <p className="text-slate-800 dark:text-white font-mono text-lg"><span className="text-slate-500 font-sans text-sm">Email:</span> {leadEmail}</p>
           <p className="text-slate-800 dark:text-white font-mono text-lg"><span className="text-slate-500 font-sans text-sm">Password (Team ID):</span> {registeredTeam.uniqueId}</p>
         </motion.div>
@@ -385,11 +575,10 @@ export const RegistrationForm: React.FC = () => {
 
       <Button
         type="submit"
-        className="w-full text-lg py-6"
+        className="w-full text-lg py-6 bg-[#3760F8] hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
       >
         <UserPlus className="w-5 h-5 mr-2" /> Preview Details
       </Button>
     </form>
   );
 };
-

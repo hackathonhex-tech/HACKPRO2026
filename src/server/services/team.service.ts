@@ -42,7 +42,8 @@ export async function registerTeam(payload: any) {
       phone: payload.leadPhone,
       college: payload.collegeName,
       department: payload.department,
-      attendance: false
+      attendance: false,
+      customFields: payload.leadCustomFields || payload.leadCustom || {}
     },
     ...(payload.members || []).map((m: any) => ({
       name: m.name,
@@ -52,7 +53,8 @@ export async function registerTeam(payload: any) {
       phone: m.phone || '',
       college: m.college || payload.collegeName,
       department: m.department || payload.department,
-      attendance: m.attendance || false
+      attendance: m.attendance || false,
+      customFields: m.customFields || {}
     }))
   ];
 
@@ -65,6 +67,7 @@ export async function registerTeam(payload: any) {
     supersetId: leadSuperset,
     collegeName: payload.collegeName,
     department: payload.department,
+    customFields: payload.customFields || {},
     members: allMembers,
     uniqueId,
     qrCodeString: uniqueId

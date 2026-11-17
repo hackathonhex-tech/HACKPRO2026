@@ -1156,6 +1156,36 @@ export function UserManagementBoard({
                   <p className="font-medium text-slate-900 dark:text-white truncate" title={viewingTeam.department}>{viewingTeam.department || 'Not provided'}</p>
                 </div>
               </div>
+
+              {/* Team Custom Fields */}
+              {viewingTeam.customFields && Object.keys(viewingTeam.customFields).length > 0 && (
+                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Additional Team Details</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {Object.entries(viewingTeam.customFields).map(([key, val]: [string, any]) => (
+                      <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <span className="text-[11px] text-slate-400 block font-medium capitalize">{key.replace(/_/g, ' ')}</span>
+                        <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 break-words">{val?.toString() || '-'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Team Lead Custom Fields */}
+              {viewingTeam.members?.[0]?.customFields && Object.keys(viewingTeam.members[0].customFields).length > 0 && (
+                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Additional Team Lead Details</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {Object.entries(viewingTeam.members[0].customFields).map(([key, val]: [string, any]) => (
+                      <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <span className="text-[11px] text-slate-400 block font-medium capitalize">{key.replace(/_/g, ' ')}</span>
+                        <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 break-words">{val?.toString() || '-'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Team Members Section */}
@@ -1206,6 +1236,20 @@ export function UserManagementBoard({
                           <span className="text-slate-700 dark:text-slate-300 truncate block" title={m.department}>{m.department || '-'}</span>
                         </div>
                       </div>
+
+                      {/* Member custom fields */}
+                      {m.customFields && Object.keys(m.customFields).length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/40">
+                          <span className="text-[11px] text-slate-400 font-bold block mb-1.5 uppercase">Custom Details</span>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(m.customFields).map(([k, v]: [string, any]) => (
+                              <span key={k} className="inline-flex items-center text-xs px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                <strong className="font-medium mr-1 capitalize">{k.replace(/_/g, ' ')}:</strong> {v?.toString() || '-'}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

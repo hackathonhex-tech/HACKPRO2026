@@ -1,4 +1,4 @@
-import { getSettings, createSettings, updateSettings, getLockedEvaluations } from '../repositories/settings.repository';
+import { getSettings, createSettings, updateSettings, updateRegistrationFieldsConfig as updateFieldsConfigRepo, getLockedEvaluations, DEFAULT_REGISTRATION_FIELDS_CONFIG } from '../repositories/settings.repository';
 
 export async function getPublicSettings() {
   const settings = await getSettings();
@@ -10,7 +10,8 @@ export async function getPublicSettings() {
     hideTeamDetailsOnLeaderboard: settings?.hideTeamDetailsOnLeaderboard ?? false,
     isRegistrationOpen: settings?.isRegistrationOpen ?? true,
     maxTeamSize: settings?.maxTeamSize ?? 4,
-    leaderboardFilters: settings?.leaderboardFilters || { round: true, judge: true, problemStatement: true }
+    leaderboardFilters: settings?.leaderboardFilters || { round: true, judge: true, problemStatement: true },
+    registrationFieldsConfig: settings?.registrationFieldsConfig || DEFAULT_REGISTRATION_FIELDS_CONFIG
   };
 
   return { success: true, settings: result };
@@ -23,7 +24,8 @@ export async function getAdminSettings() {
       isPublicLeaderboardVisible: true,
       isTeamLeaderboardVisible: true,
       hideTeamDetailsOnLeaderboard: false,
-      leaderboardFilters: { round: true, judge: true, problemStatement: true }
+      leaderboardFilters: { round: true, judge: true, problemStatement: true },
+      registrationFieldsConfig: DEFAULT_REGISTRATION_FIELDS_CONFIG
     });
   }
   return { success: true, settings };
@@ -31,6 +33,11 @@ export async function getAdminSettings() {
 
 export async function updateAdminSettings(body: any) {
   const settings = await updateSettings(body);
+  return { success: true, settings };
+}
+
+export async function updateRegistrationFieldsConfig(config: any) {
+  const settings = await updateFieldsConfigRepo(config);
   return { success: true, settings };
 }
 

@@ -33,6 +33,17 @@ export async function updateAdminSettingsAction(body: any) {
   }
 }
 
+export async function updateRegistrationFieldsConfigAction(config: any) {
+  try {
+    const auth = await verifyApiAuth(['admin', 'sub-admin'], 'manage_settings');
+    if (!auth.authenticated) return { success: false, message: auth.error };
+    
+    return await SettingsService.updateRegistrationFieldsConfig(config);
+  } catch {
+    return { success: false, message: 'Server error' };
+  }
+}
+
 export async function getLeaderboardAction() {
   try {
     const auth = await verifyApiAuth();
