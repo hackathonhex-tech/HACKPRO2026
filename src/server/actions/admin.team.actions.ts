@@ -72,7 +72,7 @@ export async function assignJudgesAction(id: string, assignedJudges: string[]) {
 }
 
 export async function updateTeamAttendanceAction(id: string, attendance: boolean) {
-  const auth = await verifyApiAuth(['admin', 'sub-admin'], ['manage_users', 'attendance', 'scanner']);
+  const auth = await verifyApiAuth(['admin', 'sub-admin', 'judge'], ['manage_users', 'attendance', 'scanner']);
   if (!auth.authenticated) return { success: false, message: auth.error };
 
   try {
@@ -84,7 +84,7 @@ export async function updateTeamAttendanceAction(id: string, attendance: boolean
 }
 
 export async function updateMemberAttendanceAction(id: string, memberIndex: number, attendance: boolean) {
-  const auth = await verifyApiAuth(['admin', 'sub-admin'], ['manage_users', 'attendance', 'scanner']);
+  const auth = await verifyApiAuth(['admin', 'sub-admin', 'judge'], ['manage_users', 'attendance', 'scanner']);
   if (!auth.authenticated) return { success: false, message: auth.error };
 
   try {

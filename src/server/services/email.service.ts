@@ -95,7 +95,7 @@ export async function sendRegistrationTicketEmail(team: any) {
 
       <!-- Footer Note -->
       <div style="text-align: center; padding-top: 16px; border-top: 1px dashed #d4d0fa; font-size: 12px; color: #64748b;">
-        Please present this ticket pass or check-in QR code at physical registration.<br/>
+        Please present this ticket pass or check-in QR code at registration check-in.<br/>
         <strong>Best of luck from the HACKPRO Team!</strong>
       </div>
     </div>

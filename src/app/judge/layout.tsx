@@ -1,10 +1,11 @@
 "use client";
 import React from 'react';
-import { Gavel, LayoutDashboard, BarChart } from 'lucide-react';
+import { Gavel, LayoutDashboard, BarChart, Scan } from 'lucide-react';
 import { DashboardTemplate } from '@/components/templates/DashboardTemplate';
 
 const judgeNav = [
   { name: 'Dashboard', href: '/judge/dashboard', icon: LayoutDashboard },
+  { name: 'QR Scanner', href: '/judge/scanner', icon: Scan },
   { name: 'Live Leaderboard', href: '/leaderboard', icon: BarChart },
 ];
 

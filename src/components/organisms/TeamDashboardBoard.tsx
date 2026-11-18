@@ -235,7 +235,7 @@ export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps)
       ctx.fillStyle = '#059669';
       ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`Present this ticket pass at physical check-in scanner  ·  Credentials: ${team.leadEmail} / ${team.uniqueId}`, 790, 630);
+      ctx.fillText(`Present this ticket pass at check-in scanner  ·  Credentials: ${team.leadEmail} / ${team.uniqueId}`, 790, 630);
 
       // Download directly to client machine!
       const dataUrl = canvas.toDataURL('image/png');
@@ -367,7 +367,7 @@ export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps)
                   </div>
                   <div>
                     <p className="font-bold text-slate-800 dark:text-white">Check-in Status</p>
-                    <p className="text-xs font-medium text-slate-500 mt-0.5">Physical event attendance</p>
+                    <p className="text-xs font-medium text-slate-500 mt-0.5">Event attendance</p>
                   </div>
                 </div>
                 {team.attendance ? (
