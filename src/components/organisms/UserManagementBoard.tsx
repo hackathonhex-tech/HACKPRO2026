@@ -484,7 +484,7 @@ export function UserManagementBoard({
             options={[
               { id: 'judges', label: 'Judges' },
               { id: 'teams', label: 'Teams' },
-              ...(currentUserRole === 'admin' ? [{ id: 'roles', label: 'Roles & Permissions' }, { id: 'subadmins', label: 'users' }] : [])
+              ...(currentUserRole === 'admin' ? [{ id: 'roles', label: 'Roles & Permissions' }, { id: 'subadmins', label: 'Users' }] : [])
             ]}
             activeTab={activeTab}
             onChange={(id) => setActiveTab(id as 'judges' | 'teams' | 'subadmins' | 'roles')}
@@ -701,7 +701,7 @@ export function UserManagementBoard({
       {activeTab === 'subadmins' && currentUserRole === 'admin' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white">users ({subAdmins.length})</h3>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Users ({subAdmins.length})</h3>
             <Button size="sm" onClick={() => setIsSubAdminModalOpen(true)} leftIcon={<Plus className="w-4 h-4" />}>
               Add Sub-Admin
             </Button>
