@@ -999,8 +999,9 @@ export function UserManagementBoard({
               Assessment Mode
             </label>
             <div className="grid grid-cols-2 gap-3">
-              <label
-                className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
+              <div
+                onClick={() => setJudgeAssessmentMode('virtual')}
+                className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all select-none ${
                   judgeAssessmentMode === 'virtual'
                     ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-500 ring-2 ring-blue-500/20'
                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'
@@ -1020,10 +1021,11 @@ export function UserManagementBoard({
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   Shows QR Scanner & attendance page
                 </span>
-              </label>
+              </div>
 
-              <label
-                className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
+              <div
+                onClick={() => setJudgeAssessmentMode('offline')}
+                className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all select-none ${
                   judgeAssessmentMode === 'offline'
                     ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-500 ring-2 ring-blue-500/20'
                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'
@@ -1043,7 +1045,7 @@ export function UserManagementBoard({
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   Hides QR Scanner page for in-person evaluations
                 </span>
-              </label>
+              </div>
             </div>
           </div>
 

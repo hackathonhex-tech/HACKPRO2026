@@ -10,6 +10,12 @@ const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
-});
+}, { strict: false });
+
+if (mongoose.models && mongoose.models.User) {
+  if (!mongoose.models.User.schema?.paths?.assessmentMode) {
+    delete (mongoose.models as any).User;
+  }
+}
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);
