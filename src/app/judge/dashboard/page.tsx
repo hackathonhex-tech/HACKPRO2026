@@ -83,8 +83,17 @@ export default function JudgeDashboard() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700/50 shadow-xs animate-pulse space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+                <div className="h-4 w-16 bg-slate-100 dark:bg-slate-700/60 rounded"></div>
+              </div>
+              <div className="h-6 w-3/4 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+              <div className="h-10 w-full bg-slate-100 dark:bg-slate-700/50 rounded-xl"></div>
+            </div>
+          ))}
         </div>
       ) : (
         <TeamListForJudging

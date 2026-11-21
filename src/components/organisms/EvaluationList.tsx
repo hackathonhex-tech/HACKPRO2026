@@ -527,13 +527,19 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <div className="flex justify-center">
-                      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  </td>
-                </tr>
+                <>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="animate-pulse border-b border-slate-100 dark:border-slate-800">
+                      <td className="px-6 py-4"><div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 w-28 bg-slate-200 dark:bg-slate-700 rounded"></div></td>
+                      <td className="px-6 py-4"><div className="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded-full"></div></td>
+                      <td className="px-6 py-4"><div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 rounded-full"></div></td>
+                      <td className="px-6 py-4 text-center"><div className="h-6 w-12 bg-slate-200 dark:bg-slate-700 rounded mx-auto"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 w-40 bg-slate-200 dark:bg-slate-700 rounded"></div></td>
+                      <td className="px-6 py-4 text-right"><div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded-lg ml-auto"></div></td>
+                    </tr>
+                  ))}
+                </>
               ) : filteredEvaluations.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">

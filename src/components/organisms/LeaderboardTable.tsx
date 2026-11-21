@@ -33,8 +33,16 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ filteredLead
 
   if (loading) {
     return (
-      <div className="flex-1 flex justify-center items-center py-32">
-        <div className="w-20 h-20 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      <div className="bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl shadow-indigo-900/5 overflow-hidden border border-slate-200/60 flex-1 flex flex-col p-8 space-y-4 animate-pulse">
+        <div className="h-12 w-full bg-slate-100 dark:bg-slate-800 rounded-2xl mb-2"></div>
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="h-16 w-full bg-slate-100/80 dark:bg-slate-800/60 rounded-2xl flex items-center px-6 gap-6">
+            <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0"></div>
+            <div className="h-5 w-40 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+            <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded-lg hidden sm:block"></div>
+            <div className="h-8 w-20 bg-slate-200 dark:bg-slate-700 rounded-xl ml-auto"></div>
+          </div>
+        ))}
       </div>
     );
   }

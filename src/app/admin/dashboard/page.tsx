@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { AdminDashboardBoard } from '@/components/organisms/AdminDashboardBoard';
+import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { getTeamsAction } from '@/server/actions/admin.team.actions';
 import { getJudgesAction } from '@/server/actions/judge.actions';
 
@@ -75,11 +76,7 @@ export default function AdminDashboard() {
   }, [fetchStats]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LoadingScreen variant="dashboard" />;
   }
 
   return <AdminDashboardBoard stats={stats} trackData={trackData} permissions={permissions} />;

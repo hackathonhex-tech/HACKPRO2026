@@ -21,6 +21,7 @@ import { Button } from '../atoms/Button';
 import { Input } from '../atoms/Input';
 import { Label } from '../atoms/Label';
 import { Modal } from '../molecules/Modal';
+import { LoadingScreen } from '../molecules/LoadingScreen';
 import { getAdminSettingsAction, updateRegistrationFieldsConfigAction } from '@/server/actions/settings.actions';
 
 export interface FormFieldConfig {
@@ -268,12 +269,7 @@ export const RegistrationFieldConfigBoard: React.FC = () => {
   const currentFields = activeTab === 'team' ? config.teamFields : config.memberFields;
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 space-y-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#3760F8]"></div>
-        <p className="text-slate-500 font-medium">Loading registration fields configuration...</p>
-      </div>
-    );
+    return <LoadingScreen variant="form" />;
   }
 
   return (

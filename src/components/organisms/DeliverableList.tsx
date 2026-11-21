@@ -220,10 +220,25 @@ export function DeliverableList({ deliverables, loading, onRefresh }: Deliverabl
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <AnimatePresence>
           {loading && deliverables.length === 0 ? (
-            <div className="col-span-full py-20 text-center">
-              <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin mx-auto mb-4" />
-              <p className="text-slate-500 font-bold">Loading submissions...</p>
-            </div>
+            <>
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700/50 shadow-xs animate-pulse space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+                    <div className="h-5 w-16 bg-slate-100 dark:bg-slate-700/60 rounded"></div>
+                  </div>
+                  <div className="h-6 w-3/4 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+                  <div className="space-y-2">
+                    <div className="h-3.5 w-full bg-slate-100 dark:bg-slate-700/50 rounded"></div>
+                    <div className="h-3.5 w-4/5 bg-slate-100 dark:bg-slate-700/50 rounded"></div>
+                  </div>
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-700/40 flex items-center justify-between">
+                    <div className="h-4 w-28 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                    <div className="h-8 w-20 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                  </div>
+                </div>
+              ))}
+            </>
           ) : filtered.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-full py-20 text-center bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700/50 border-dashed">
               <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />

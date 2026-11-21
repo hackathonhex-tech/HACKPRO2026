@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { RoundQualificationBoard } from '@/components/organisms/RoundQualificationBoard';
+import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { getRoundsAction, updateRoundAllowedTeamsAction } from '@/server/actions/round.actions';
 import { getTeamsAction } from '@/server/actions/admin.team.actions';
 
@@ -39,11 +40,7 @@ export default function AdminRoundQualificationPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-24">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LoadingScreen variant="table" />;
   }
 
   return (

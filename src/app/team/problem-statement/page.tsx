@@ -5,6 +5,7 @@ import { Lock, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { ProblemStatementGrid } from '@/components/organisms/ProblemStatementGrid';
+import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { meAction } from '@/server/actions/user.actions';
 import { getTeamByUniqueIdAction, selectProblemStatementAction } from '@/server/actions/team.actions';
 import { getProblemStatementsAction } from '@/server/actions/problem-statements.actions';
@@ -64,11 +65,7 @@ export default function ProblemStatementPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LoadingScreen variant="cards" />;
   }
 
   const hasSelected = !!team?.problemStatementId;

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 
 import { ProjectSubmissionForm } from '@/components/organisms/ProjectSubmissionForm';
+import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { meAction } from '@/server/actions/user.actions';
 import { getTeamByUniqueIdAction, getDeliverableAction, submitDeliverableAction } from '@/server/actions/team.actions';
 import { getActiveRoundAction } from '@/server/actions/round.actions';
@@ -90,11 +91,7 @@ export default function SubmitDeliverablesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LoadingScreen variant="form" />;
   }
 
   if (!team?.problemStatementId) {

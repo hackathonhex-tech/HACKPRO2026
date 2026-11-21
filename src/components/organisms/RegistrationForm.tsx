@@ -230,8 +230,18 @@ export const RegistrationForm: React.FC = () => {
 
   if (isRegistrationOpen === null) {
     return (
-      <div className="flex justify-center py-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3760F8]"></div>
+      <div className="w-full max-w-4xl mx-auto space-y-6 py-6 animate-pulse">
+        <div className="h-36 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/60 p-8 space-y-4 shadow-xs">
+          <div className="h-6 w-48 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+          <div className="h-4 w-72 bg-slate-100 dark:bg-slate-700/60 rounded"></div>
+        </div>
+        <div className="h-64 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/60 p-8 space-y-4 shadow-xs">
+          <div className="h-6 w-36 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div className="h-11 bg-slate-100 dark:bg-slate-700/50 rounded-xl"></div>
+            <div className="h-11 bg-slate-100 dark:bg-slate-700/50 rounded-xl"></div>
+          </div>
+        </div>
       </div>
     );
   }

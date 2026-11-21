@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 
 import { GlobalSettingsPanel } from '@/components/organisms/GlobalSettingsPanel';
 import { AdminTimerControls } from '@/components/organisms/AdminTimerControls';
+import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { getAdminSettingsAction, updateAdminSettingsAction } from '@/server/actions/settings.actions';
 
 export default function SettingsPage() {
@@ -106,11 +107,7 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    );
+    return <LoadingScreen variant="form" />;
   }
 
   return (

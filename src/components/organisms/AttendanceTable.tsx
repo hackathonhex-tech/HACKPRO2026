@@ -242,8 +242,22 @@ export function AttendanceTable({ teams, loading, onToggleMemberAttendance, onMa
       
       <div className="space-y-4">
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700/50 shadow-xs animate-pulse flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-36 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+                    <div className="h-3 w-24 bg-slate-100 dark:bg-slate-700/50 rounded"></div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-7 w-20 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+                  <div className="h-8 w-24 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredTeams.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center border border-slate-100 dark:border-slate-700/50">

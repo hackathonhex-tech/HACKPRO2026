@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { TeamDashboardBoard } from '@/components/organisms/TeamDashboardBoard';
+import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { meAction } from '@/server/actions/user.actions';
 import { getTeamByUniqueIdAction } from '@/server/actions/team.actions';
 
@@ -35,11 +36,7 @@ export default function TeamDashboard() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LoadingScreen variant="dashboard" />;
   }
 
   if (!team) {

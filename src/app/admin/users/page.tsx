@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { UserManagementBoard } from '@/components/organisms/UserManagementBoard';
+import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { getJudgesAction, createJudgeAction, updateJudgeAction, deleteJudgeAction } from '@/server/actions/judge.actions';
 import { getTeamsAction, createTeamAction, updateTeamAction, deleteTeamAction } from '@/server/actions/admin.team.actions';
 import { getPublicSettingsAction } from '@/server/actions/settings.actions';
@@ -112,11 +113,7 @@ export default function UsersPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LoadingScreen variant="table" />;
   }
 
   return (

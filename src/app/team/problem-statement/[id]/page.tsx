@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { ProblemStatementDetailCard } from '@/components/organisms/ProblemStatementDetailCard';
+import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { meAction } from '@/server/actions/user.actions';
 import { getTeamByUniqueIdAction, selectProblemStatementAction } from '@/server/actions/team.actions';
 import { getProblemStatementAction } from '@/server/actions/problem-statements.actions';
@@ -70,11 +71,7 @@ export default function ProblemStatementDetailPage({ params }: { params: Promise
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LoadingScreen variant="form" />;
   }
 
   if (!ps) return null;

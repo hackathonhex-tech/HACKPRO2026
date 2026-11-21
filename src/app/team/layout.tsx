@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Rocket, LayoutDashboard, UploadCloud, FileText, BarChart, Lock, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DashboardTemplate } from '@/components/templates/DashboardTemplate';
+import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { meAction, logoutAction } from '@/server/actions/user.actions';
 import { getTeamByUniqueIdAction } from '@/server/actions/team.actions';
 import { getActiveRoundAction } from '@/server/actions/round.actions';
@@ -63,8 +64,8 @@ export default function TeamLayout({ children }: { children: React.ReactNode }) 
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-        <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-900 text-white p-8">
+        <LoadingScreen variant="dashboard" />
       </div>
     );
   }
