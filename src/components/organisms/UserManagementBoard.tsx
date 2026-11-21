@@ -16,7 +16,7 @@ export interface UserManagementBoardProps {
   teams: any[];
   maxTeamSize: number;
   onRefresh: () => void;
-  onCreateJudge: (data: any) => Promise<boolean>;
+  onCreateJudge: (data: any) => Promise<any>;
   onDeleteJudge: (id: string) => Promise<boolean>;
   onEditJudge: (id: string, data: any) => Promise<boolean>;
   onCreateTeam: (data: any) => Promise<boolean>;
@@ -168,13 +168,14 @@ export function UserManagementBoard({
   const handleCreateJudge = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
-    const success = await onCreateJudge({
+    const res = await onCreateJudge({
       name: judgeName,
       email: judgeEmail,
       password: judgePassword,
       assessmentMode: judgeAssessmentMode
     });
-    if (success) {
+    const isSuccess = typeof res === 'boolean' ? res : res?.success;
+    if (isSuccess) {
       setJudgeName('');
       setJudgeEmail('');
       setJudgePassword('');
@@ -182,7 +183,8 @@ export function UserManagementBoard({
       setIsJudgeModalOpen(false);
       onRefresh();
     } else {
-      alert('Failed to create judge.');
+      const errorMsg = (typeof res === 'object' && res?.message) ? res.message : 'Failed to create judge.';
+      alert(errorMsg);
     }
     setIsCreating(false);
   };

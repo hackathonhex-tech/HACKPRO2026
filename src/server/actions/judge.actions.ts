@@ -22,8 +22,12 @@ export async function createJudgeAction(body: any) {
   try {
     const judge = await judgeService.createJudge(body);
     return { success: true, judge };
-  } catch {
-    return { success: false, message: 'Server error' };
+  } catch (error: any) {
+    console.error('createJudgeAction error:', error);
+    if (error.code === 11000) {
+      return { success: false, message: 'A judge with this email already exists.' };
+    }
+    return { success: false, message: error.message || 'Server error' };
   }
 }
 
