@@ -23,6 +23,7 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [manualId, setManualId] = useState('');
   const [showManual, setShowManual] = useState(false);
+  const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
@@ -35,12 +36,18 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
     const isBenignCameraAbort = (msg: string, name?: string) => {
       return (
         name === 'AbortError' ||
+        name === 'NotAllowedError' ||
+        name === 'NotFoundError' ||
         msg.includes('play()') ||
         msg.includes('interrupted') ||
         msg.includes('media was removed') ||
         msg.includes('RenderedCameraImpl') ||
         msg.includes('onabort') ||
-        msg.includes('onerror')
+        msg.includes('onerror') ||
+        msg.includes('NotAllowedError') ||
+        msg.includes('Permission denied') ||
+        msg.includes('NotFoundError') ||
+        msg.includes('userMedia')
       );
     };
 
@@ -212,16 +219,34 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
       setScanning(true);
     } catch (err: any) {
       const msg = err?.message || String(err);
-      if (
+      const isBenign =
         msg.includes('play()') ||
         msg.includes('interrupted') ||
         msg.includes('AbortError') ||
         msg.includes('RenderedCameraImpl') ||
-        msg.includes('onabort')
-      ) {
+        msg.includes('onabort');
+
+      const isPermissionOrHardwareIssue =
+        msg.includes('NotAllowedError') ||
+        msg.includes('Permission denied') ||
+        msg.includes('PermissionDismissedError') ||
+        msg.includes('NotFoundError') ||
+        msg.includes('DevicesNotFoundError') ||
+        msg.includes('NotReadableError') ||
+        msg.includes('TrackStartError') ||
+        msg.includes('OverconstrainedError') ||
+        msg.includes('userMedia') ||
+        msg.includes('permission');
+
+      if (isBenign) {
         // Benign error from media element cleanup or camera abort
+      } else if (isPermissionOrHardwareIssue) {
+        // Camera permission denied or webcam not connected -> seamlessly switch to manual input without raising unhandled errors
+        if (isMountedRef.current) {
+          setCameraPermissionDenied(true);
+          setShowManual(true);
+        }
       } else {
-        console.error("Camera error:", err);
         if (isMountedRef.current) {
           setShowManual(true);
         }
@@ -266,6 +291,7 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
     setScanResult(null);
     setManualId('');
     setShowManual(false);
+    setCameraPermissionDenied(false);
     onReset();
   }, [stopScanner, onReset]);
 
@@ -317,6 +343,14 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
           {/* Keep both views mounted in DOM so #qr-reader is not abruptly removed */}
           <div className={showManual ? 'block' : 'hidden'}>
             <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700/50 p-8">
+              {cameraPermissionDenied && (
+                <div className="mb-5 p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl flex items-center gap-3 text-xs text-amber-800 dark:text-amber-200">
+                  <span className="text-base">📷</span>
+                  <div>
+                    <span className="font-bold">Camera access unavailable:</span> Camera permission was denied or no webcam was detected on this device. Switched to manual Team ID entry.
+                  </div>
+                </div>
+              )}
               <form onSubmit={handleManualSearch} className="space-y-4">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Enter Team ID</label>
                 <div className="flex gap-3">

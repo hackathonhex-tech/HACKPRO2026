@@ -83,6 +83,8 @@ if (typeof window !== 'undefined') {
   const handleMediaAbort = (msg: string, name?: string) => {
     return (
       name === 'AbortError' ||
+      name === 'NotAllowedError' ||
+      name === 'NotFoundError' ||
       msg.includes('play()') ||
       msg.includes('interrupted') ||
       msg.includes('media was removed') ||
@@ -91,7 +93,11 @@ if (typeof window !== 'undefined') {
       msg.includes('video surface onabort()') ||
       msg.includes('video surface onerror()') ||
       msg.includes('onabort() called') ||
-      msg.includes('onerror() called')
+      msg.includes('onerror() called') ||
+      msg.includes('NotAllowedError') ||
+      msg.includes('Permission denied') ||
+      msg.includes('NotFoundError') ||
+      msg.includes('userMedia')
     );
   };
 
@@ -117,11 +123,20 @@ if (typeof window !== 'undefined') {
   }, true);
 }
 
-// Silence next-themes script tag warning in React 19 / Next.js 15+
+// Silence next-themes script tag warning and camera permission prompts in React 19 / Next.js 15+
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   const orig = console.error;
   console.error = (...args: unknown[]) => {
     if (typeof args[0] === 'string' && args[0].includes('Encountered a script tag')) return;
+    const combined = args.map(a => typeof a === 'string' ? a : (a as any)?.message || String(a)).join(' ');
+    if (
+      combined.includes('NotAllowedError') ||
+      combined.includes('Permission denied') ||
+      combined.includes('NotFoundError') ||
+      (combined.includes('Camera error') && combined.includes('userMedia'))
+    ) {
+      return;
+    }
     orig.apply(console, args);
   };
 }
