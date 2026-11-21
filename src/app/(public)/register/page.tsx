@@ -2,7 +2,6 @@
 
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ThemeToggle } from '@/components/atoms/ThemeToggle';
 import { RegistrationForm } from '@/components/organisms/RegistrationForm';
 import { BrandLogo } from '@/components/atoms/BrandLogo';

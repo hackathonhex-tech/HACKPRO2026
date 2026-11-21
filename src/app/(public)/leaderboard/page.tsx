@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Trophy, Maximize2, Minimize2, Filter, Sparkles, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import { LeaderboardTable } from '@/components/organisms/LeaderboardTable';
 import { LeaderboardPodium } from '@/components/organisms/LeaderboardPodium';
 import { useRouter } from 'next/navigation';

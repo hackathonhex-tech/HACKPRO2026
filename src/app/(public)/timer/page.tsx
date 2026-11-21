@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPublicProblemStatementsAction } from "@/server/actions/problem-statements.actions";
-import { BrandLogo } from "@/components/atoms/BrandLogo";
 
 function playBuzzer() {
   if (typeof window === 'undefined') return;

@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { LogOut, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,7 +24,7 @@ interface DashboardTemplateProps {
 }
 
 export const DashboardTemplate: React.FC<DashboardTemplateProps> = ({ 
-  children, navItems, title, subtitle, titleIcon: TitleIcon, 
+  children, navItems, title, subtitle, 
   titleColorClass = "from-indigo-500 to-cyan-500",
   activeColorClass = "bg-indigo-600 dark:bg-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10"
 }) => {

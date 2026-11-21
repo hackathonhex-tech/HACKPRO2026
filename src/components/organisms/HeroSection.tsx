@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect, useSyncExternalStore } from 'react';
-import Image from 'next/image';
 import { motion, Variants } from 'framer-motion';
 import { ArrowRight, Code2, Rocket, Users, Trophy } from 'lucide-react';
 import Link from 'next/link';

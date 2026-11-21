@@ -117,7 +117,7 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
           await scanner.stop();
         }
         scanner.clear();
-      } catch (err: any) {
+      } catch {
         // Silently handle expected stop errors when stopping
       }
     }
@@ -232,7 +232,9 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
   }, [onScanResult]);
 
   const stopScannerRef = useRef(stopScanner);
-  stopScannerRef.current = stopScanner;
+  useEffect(() => {
+    stopScannerRef.current = stopScanner;
+  }, [stopScanner]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;

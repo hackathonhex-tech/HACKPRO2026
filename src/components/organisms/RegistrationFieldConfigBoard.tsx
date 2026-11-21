@@ -15,15 +15,11 @@ import {
   Users, 
   Building2, 
   Sparkles,
-  SlidersHorizontal,
-  Layers,
-  HelpCircle
+  SlidersHorizontal
 } from 'lucide-react';
-import { Card } from '../atoms/Card';
 import { Button } from '../atoms/Button';
 import { Input } from '../atoms/Input';
 import { Label } from '../atoms/Label';
-import { Badge } from '../atoms/Badge';
 import { Modal } from '../molecules/Modal';
 import { getAdminSettingsAction, updateRegistrationFieldsConfigAction } from '@/server/actions/settings.actions';
 
@@ -86,10 +82,6 @@ export const RegistrationFieldConfigBoard: React.FC = () => {
   // Preview modal
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
   const loadSettings = async () => {
     setLoading(true);
     try {
@@ -105,6 +97,10 @@ export const RegistrationFieldConfigBoard: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);

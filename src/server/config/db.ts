@@ -4,7 +4,7 @@ import dns from 'dns';
 // Fix for Node.js querySrv ECONNREFUSED on local/ISP DNS resolvers
 try {
   dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
-} catch (e) {
+} catch {
   // Ignore in environments where setServers is restricted
 }
 
