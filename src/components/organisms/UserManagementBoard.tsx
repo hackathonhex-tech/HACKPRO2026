@@ -1108,20 +1108,22 @@ export function UserManagementBoard({
       {/* View Team Modal */}
       <Modal isOpen={!!viewingTeam} onClose={() => setViewingTeam(null)} title={viewingTeam?.name} maxWidth="3xl">
         {viewingTeam && (
-          <div className="space-y-8">
-            <div className="flex items-center space-x-3 -mt-4 mb-6">
-              <span className="font-mono text-xs text-slate-600 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-600">ID: {viewingTeam.uniqueId}</span>
-              <span className="text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 px-2.5 py-1 rounded-lg">Track: {viewingTeam.problemStatementId?.track || 'N/A'}</span>
+          <div className="space-y-6 pb-6">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">ID: {viewingTeam.uniqueId}</span>
+              <span className="text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 px-3 py-1.5 rounded-xl border border-amber-200/60 dark:border-amber-500/20">Track: {viewingTeam.problemStatementId?.track || 'N/A'}</span>
               {viewingTeam.problemStatementId?.title && (
-                <span className="text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300 px-2.5 py-1 rounded-lg truncate max-w-xs" title={viewingTeam.problemStatementId.title}>
+                <span className="text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300 px-3 py-1.5 rounded-xl border border-indigo-200/60 dark:border-indigo-500/20 truncate max-w-xs" title={viewingTeam.problemStatementId.title}>
                   PS: {viewingTeam.problemStatementId.title}
                 </span>
               )}
             </div>
 
             {/* Team Lead Section */}
-            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-700/50">
-              <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center"><User className="w-4 h-4 mr-2" /> Team Lead</h4>
+            <div className="bg-slate-50/80 dark:bg-slate-900/60 rounded-2xl p-6 border border-slate-200/70 dark:border-slate-700/60 shadow-xs">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center">
+                <User className="w-4 h-4 mr-2 text-indigo-500" /> TEAM LEAD
+              </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="min-w-0">
                   <p className="text-xs text-slate-400 font-bold mb-1">Name</p>
@@ -1164,7 +1166,7 @@ export function UserManagementBoard({
                   <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Additional Team Details</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {Object.entries(viewingTeam.customFields).map(([key, val]: [string, any]) => (
-                      <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
                         <span className="text-[11px] text-slate-400 block font-medium capitalize">{key.replace(/_/g, ' ')}</span>
                         <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 break-words">{val?.toString() || '-'}</span>
                       </div>
@@ -1179,7 +1181,7 @@ export function UserManagementBoard({
                   <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Additional Team Lead Details</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {Object.entries(viewingTeam.members[0].customFields).map(([key, val]: [string, any]) => (
-                      <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
                         <span className="text-[11px] text-slate-400 block font-medium capitalize">{key.replace(/_/g, ' ')}</span>
                         <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 break-words">{val?.toString() || '-'}</span>
                       </div>
@@ -1190,9 +1192,9 @@ export function UserManagementBoard({
             </div>
 
             {/* Team Members Section */}
-            <div>
-              <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center">
-                <Users className="w-4 h-4 mr-2" /> Additional Team Members ({viewingTeam.members ? viewingTeam.members.filter((m: any, idx: number) => !((m.email && m.email === viewingTeam.leadEmail) || (m.name === viewingTeam.leadName && idx === 0))).length : 0})
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                <Users className="w-4 h-4 mr-2 text-indigo-500" /> ADDITIONAL TEAM MEMBERS ({viewingTeam.members ? viewingTeam.members.filter((m: any, idx: number) => !((m.email && m.email === viewingTeam.leadEmail) || (m.name === viewingTeam.leadName && idx === 0))).length : 0})
               </h4>
 
               {(!viewingTeam.members || viewingTeam.members.filter((m: any, idx: number) => !((m.email && m.email === viewingTeam.leadEmail) || (m.name === viewingTeam.leadName && idx === 0))).length === 0) ? (
@@ -1200,52 +1202,52 @@ export function UserManagementBoard({
                   <p className="text-slate-500 text-sm">No additional members added.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {viewingTeam.members.filter((m: any, idx: number) => !((m.email && m.email === viewingTeam.leadEmail) || (m.name === viewingTeam.leadName && idx === 0))).map((m: any, idx: number) => (
-                    <div key={idx} className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700/50 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-colors shadow-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <h5 className="font-bold text-slate-900 dark:text-white text-lg flex items-center">
-                          <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 flex items-center justify-center text-xs mr-3">{idx + 1}</span>
+                    <div key={idx} className="bg-white dark:bg-slate-800/90 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-700/60 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all shadow-xs">
+                      <div className="flex items-center justify-between mb-4">
+                        <h5 className="font-bold text-slate-900 dark:text-white text-base flex items-center">
+                          <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 flex items-center justify-center text-xs font-bold mr-3">{idx + 1}</span>
                           {m.name || 'Unknown Member'}
                         </h5>
                         {m.supersetId && (
-                          <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-lg">
+                          <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1 rounded-xl border border-indigo-100 dark:border-indigo-500/20">
                             Superset: {m.supersetId}
                           </span>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 text-sm">
                         <div className="min-w-0">
-                          <span className="text-xs text-slate-400 block mb-0.5">Superset ID</span>
-                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate block">{m.supersetId || '-'}</span>
+                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Superset ID</span>
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate block text-xs">{m.supersetId || '-'}</span>
                         </div>
                         <div className="min-w-0 sm:col-span-1 md:col-span-2 lg:col-span-1">
-                          <span className="text-xs text-slate-400 block mb-0.5">Email</span>
-                          <span className="text-slate-700 dark:text-slate-300 break-all block text-xs" title={m.email}>{m.email || '-'}</span>
+                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Email</span>
+                          <span className="text-slate-700 dark:text-slate-300 break-all block text-xs font-medium" title={m.email}>{m.email || '-'}</span>
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs text-slate-400 block mb-0.5">Phone</span>
-                          <span className="text-slate-700 dark:text-slate-300 truncate block">{m.phone || (m.contact && !m.contact.includes('@') ? m.contact : '-')}</span>
+                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Phone</span>
+                          <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium">{m.phone || (m.contact && !m.contact.includes('@') ? m.contact : '-')}</span>
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs text-slate-400 block mb-0.5">College</span>
-                          <span className="text-slate-700 dark:text-slate-300 truncate block" title={m.college}>{m.college || '-'}</span>
+                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">College</span>
+                          <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium" title={m.college}>{m.college || '-'}</span>
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs text-slate-400 block mb-0.5">Department</span>
-                          <span className="text-slate-700 dark:text-slate-300 truncate block" title={m.department}>{m.department || '-'}</span>
+                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Department</span>
+                          <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium" title={m.department}>{m.department || '-'}</span>
                         </div>
                       </div>
 
                       {/* Member custom fields */}
                       {m.customFields && Object.keys(m.customFields).length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/40">
-                          <span className="text-[11px] text-slate-400 font-bold block mb-1.5 uppercase">Custom Details</span>
+                        <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-700/40">
+                          <span className="text-[10px] text-slate-400 font-bold block mb-1.5 uppercase tracking-wider">Custom Details</span>
                           <div className="flex flex-wrap gap-2">
                             {Object.entries(m.customFields).map(([k, v]: [string, any]) => (
-                              <span key={k} className="inline-flex items-center text-xs px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                                <strong className="font-medium mr-1 capitalize">{k.replace(/_/g, ' ')}:</strong> {v?.toString() || '-'}
+                              <span key={k} className="inline-flex items-center text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-600/60">
+                                <strong className="font-semibold mr-1 capitalize">{k.replace(/_/g, ' ')}:</strong> {v?.toString() || '-'}
                               </span>
                             ))}
                           </div>

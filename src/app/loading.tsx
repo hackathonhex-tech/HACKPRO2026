@@ -1,5 +1,5 @@
 import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 
 export default function Loading() {
-  return <LoadingScreen variant="dashboard" />;
+  return <LoadingScreen variant="cyclic" />;
 }

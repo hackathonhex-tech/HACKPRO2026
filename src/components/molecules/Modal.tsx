@@ -28,24 +28,27 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className={`bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} my-8 border border-slate-100 dark:border-slate-700/50 flex flex-col max-h-[90vh]`}
+            className={`bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} my-auto border border-slate-100 dark:border-slate-700/50 flex flex-col max-h-[88vh] overflow-hidden`}
           >
-            <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center px-6 py-5 sm:px-8 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/70 dark:bg-slate-900/60 shrink-0">
               <h3 className="text-xl font-bold text-slate-900 dark:text-white flex-1">{title}</h3>
               <IconButton 
                 icon={<X className="w-5 h-5" />} 
                 onClick={onClose} 
                 variant="secondary"
                 size="sm"
-                className="rounded-full shrink-0 ml-4"
+                className="rounded-full shrink-0 ml-4 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               />
             </div>
-            <div className="p-6 overflow-y-auto overflow-x-hidden flex-1">
+
+            {/* Modal Body with proper rounded edges and scroll padding */}
+            <div className="p-6 sm:p-8 pb-8 overflow-y-auto overflow-x-hidden flex-1 space-y-6">
               {children}
             </div>
           </motion.div>

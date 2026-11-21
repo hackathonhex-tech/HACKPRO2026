@@ -3,7 +3,7 @@
 import React from 'react';
 
 export interface LoadingScreenProps {
-  variant?: 'dashboard' | 'table' | 'cards' | 'form' | 'detail' | 'minimal';
+  variant?: 'dashboard' | 'table' | 'cards' | 'form' | 'detail' | 'minimal' | 'cyclic';
   count?: number;
   className?: string;
   message?: string;
@@ -15,6 +15,18 @@ export function LoadingScreen({
   count = 6,
   className = '',
 }: LoadingScreenProps) {
+  // Cyclic circular loader (for landing page / public hero)
+  if (variant === 'cyclic') {
+    return (
+      <div className={`min-h-[50vh] w-full flex flex-col items-center justify-center p-6 select-none ${className}`}>
+        <div className="relative flex items-center justify-center">
+          <div className="absolute -inset-3 bg-gradient-to-r from-indigo-500/20 to-blue-500/20 rounded-full blur-lg animate-pulse pointer-events-none" />
+          <div className="relative w-11 h-11 rounded-full border-3 border-indigo-100 dark:border-indigo-950 border-t-indigo-600 dark:border-t-indigo-400 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
   // Skeleton shimmer base styling
   const shimmer = "animate-pulse bg-slate-200/80 dark:bg-slate-700/60";
   const cardBg = "bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-xs";
