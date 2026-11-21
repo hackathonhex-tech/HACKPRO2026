@@ -71,9 +71,33 @@ export async function unifiedLoginAction(identifier: string, passwordSecret: str
 }
 
 import { verifyApiAuth } from '@/server/middleware/apiAuth';
+import connectToDatabase from '@/server/config/db';
+import User from '@/server/models/User';
 
-export async function getMeAction() {
+export async function getMeAction(): Promise<{ success: boolean; user: any }> {
   const auth = await verifyApiAuth();
-  if (!auth.authenticated) return { success: false, user: null };
+  if (!auth.authenticated || !auth.user) return { success: false, user: null };
+
+  if (auth.user.role === 'judge' && (auth.user.id || auth.user.uniqueId)) {
+    try {
+      await connectToDatabase();
+      const query = auth.user.id ? { _id: auth.user.id } : { uniqueId: auth.user.uniqueId };
+      const dbJudge = await User.findOne(query).select('-password').lean();
+      if (dbJudge) {
+        return {
+          success: true,
+          user: {
+            ...auth.user,
+            assessmentMode: (dbJudge as any).assessmentMode || 'virtual',
+            name: dbJudge.name || auth.user.name,
+            email: dbJudge.email
+          }
+        };
+      }
+    } catch (e) {
+      console.error('Error fetching fresh judge details in getMeAction:', e);
+    }
+  }
+
   return { success: true, user: auth.user };
 }

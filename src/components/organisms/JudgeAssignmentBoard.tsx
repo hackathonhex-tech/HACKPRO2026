@@ -357,9 +357,18 @@ export function JudgeAssignmentBoard() {
                           </p>
                           <p className="text-xs text-slate-500 truncate">{judge.email}</p>
                         </div>
-                        <span className="text-xs font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                          {judge.uniqueId}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            judge.assessmentMode === 'offline'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                          }`}>
+                            {judge.assessmentMode === 'offline' ? 'Offline' : 'Virtual'}
+                          </span>
+                          <span className="text-xs font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                            {judge.uniqueId}
+                          </span>
+                        </div>
                       </div>
                     );
                   })

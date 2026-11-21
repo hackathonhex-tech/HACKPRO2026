@@ -88,6 +88,7 @@ export async function loginStaff(uniqueId: string, password: string) {
     uniqueId: user.uniqueId,
     role: user.role,
     name: user.name,
+    assessmentMode: user.assessmentMode || 'virtual',
     permissions: finalPermissions
   });
 

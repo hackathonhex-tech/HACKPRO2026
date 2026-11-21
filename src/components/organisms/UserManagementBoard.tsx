@@ -60,6 +60,7 @@ export function UserManagementBoard({
   const [judgeName, setJudgeName] = useState('');
   const [judgeEmail, setJudgeEmail] = useState('');
   const [judgePassword, setJudgePassword] = useState('');
+  const [judgeAssessmentMode, setJudgeAssessmentMode] = useState<'virtual' | 'offline'>('virtual');
   const [isCreating, setIsCreating] = useState(false);
   const [isJudgeModalOpen, setIsJudgeModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -167,11 +168,17 @@ export function UserManagementBoard({
   const handleCreateJudge = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
-    const success = await onCreateJudge({ name: judgeName, email: judgeEmail, password: judgePassword });
+    const success = await onCreateJudge({
+      name: judgeName,
+      email: judgeEmail,
+      password: judgePassword,
+      assessmentMode: judgeAssessmentMode
+    });
     if (success) {
       setJudgeName('');
       setJudgeEmail('');
       setJudgePassword('');
+      setJudgeAssessmentMode('virtual');
       setIsJudgeModalOpen(false);
       onRefresh();
     } else {
@@ -218,7 +225,12 @@ export function UserManagementBoard({
 
   const saveJudgeEdit = async () => {
     if (!editingJudge) return;
-    const success = await onEditJudge(editingJudge._id, { name: editingJudge.name, email: editingJudge.email, password: editingJudge.password });
+    const success = await onEditJudge(editingJudge._id, {
+      name: editingJudge.name,
+      email: editingJudge.email,
+      password: editingJudge.password,
+      assessmentMode: editingJudge.assessmentMode || 'virtual'
+    });
     if (success) {
       setEditingJudge(null);
       onRefresh();
@@ -509,13 +521,14 @@ export function UserManagementBoard({
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Judge ID</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Assessment Mode</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Password</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {judges.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500 italic">No judges created yet.</td></tr>
+                    <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500 italic">No judges created yet.</td></tr>
                   ) : (
                     paginatedJudges.map(judge => (
                       <tr key={judge._id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
@@ -531,6 +544,26 @@ export function UserManagementBoard({
                           {editingJudge?._id === judge._id ? (
                             <Input type="email" value={editingJudge.email} onChange={e => setEditingJudge({ ...editingJudge, email: e.target.value })} />
                           ) : (judge.email || '—')}
+                        </td>
+                        <td className="px-6 py-4">
+                          {editingJudge?._id === judge._id ? (
+                            <select
+                              value={editingJudge.assessmentMode || 'virtual'}
+                              onChange={e => setEditingJudge({ ...editingJudge, assessmentMode: e.target.value })}
+                              className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            >
+                              <option value="virtual">Virtual Assessment</option>
+                              <option value="offline">Offline</option>
+                            </select>
+                          ) : (
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                              judge.assessmentMode === 'offline'
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                                : 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                            }`}>
+                              {judge.assessmentMode === 'offline' ? 'Offline' : 'Virtual Assessment'}
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-sm font-mono text-slate-500 dark:text-slate-400">
                           {editingJudge?._id === judge._id ? (
@@ -958,6 +991,60 @@ export function UserManagementBoard({
             onChange={e => setJudgePassword(e.target.value)}
             placeholder="••••••••"
           />
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              Assessment Mode
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label
+                className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
+                  judgeAssessmentMode === 'virtual'
+                    ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-500 ring-2 ring-blue-500/20'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-sm text-slate-800 dark:text-white">Virtual Assessment</span>
+                  <input
+                    type="radio"
+                    name="modalAssessmentMode"
+                    value="virtual"
+                    checked={judgeAssessmentMode === 'virtual'}
+                    onChange={() => setJudgeAssessmentMode('virtual')}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                </div>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Shows QR Scanner & attendance page
+                </span>
+              </label>
+
+              <label
+                className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
+                  judgeAssessmentMode === 'offline'
+                    ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-500 ring-2 ring-blue-500/20'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-sm text-slate-800 dark:text-white">Offline</span>
+                  <input
+                    type="radio"
+                    name="modalAssessmentMode"
+                    value="offline"
+                    checked={judgeAssessmentMode === 'offline'}
+                    onChange={() => setJudgeAssessmentMode('offline')}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                </div>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Hides QR Scanner page for in-person evaluations
+                </span>
+              </label>
+            </div>
+          </div>
+
           <Button type="submit" disabled={isCreating} fullWidth leftIcon={<Plus className="w-4 h-4" />}>
             {isCreating ? 'Creating...' : 'Create Judge'}
           </Button>

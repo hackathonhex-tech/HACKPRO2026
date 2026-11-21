@@ -1,14 +1,35 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ScannerBoard } from '@/components/organisms/ScannerBoard';
 import { getTeamByUniqueIdAction } from '@/server/actions/team.actions';
 import { updateMemberAttendanceAction, updateTeamAttendanceAction } from '@/server/actions/admin.team.actions';
+import { getMeAction } from '@/server/actions/auth.actions';
 
 export default function JudgeScannerPage() {
+  const router = useRouter();
   const [teamInfo, setTeamInfo] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' | 'info' } | null>(null);
+
+  useEffect(() => {
+    async function verifyJudgeMode() {
+      try {
+        const res = await getMeAction();
+        if (res.success && res.user && (res.user as any).assessmentMode === 'offline') {
+          router.replace('/judge/dashboard');
+          return;
+        }
+      } catch (e) {
+        console.error('Access check failed:', e);
+      } finally {
+        setCheckingAccess(false);
+      }
+    }
+    verifyJudgeMode();
+  }, [router]);
 
   const fetchTeamInfo = useCallback(async (uniqueId: string) => {
     setLoading(true);
@@ -65,6 +86,10 @@ export default function JudgeScannerPage() {
     }
     setLoading(false);
   };
+
+  if (checkingAccess) {
+    return null;
+  }
 
   return (
     <ScannerBoard 

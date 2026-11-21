@@ -5,6 +5,7 @@ const UserSchema = new mongoose.Schema({
   uniqueId: { type: String, unique: true, required: true }, // For login
   password: { type: String, required: true },
   role: { type: String, enum: ['admin', 'judge', 'sub-admin'], required: true },
+  assessmentMode: { type: String, enum: ['virtual', 'offline'], default: 'virtual' },
   customRoleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
   name: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
