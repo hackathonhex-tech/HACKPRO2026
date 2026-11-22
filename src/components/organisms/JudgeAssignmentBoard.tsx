@@ -94,10 +94,10 @@ export function JudgeAssignmentBoard() {
   };
 
   const exportAssignmentsCSV = () => {
-    const presentTeams = teams.filter(t => t.attendance);
+    const targetTeams = (searchTerm || filterJudge || filterTrack) ? filteredTeams : teams;
     const headers = ['Team Name', 'Team ID', 'Problem Statement', 'Track', 'Assigned Judges'];
     
-    const rows = presentTeams.map(t => {
+    const rows = targetTeams.map(t => {
       const psTitle = t.problemStatementId?.title || 'N/A';
       const psTrack = t.problemStatementId?.track || 'N/A';
       const judges = t.assignedJudges?.map((j: any) => j.name).join('; ') || 'None';
@@ -116,27 +116,27 @@ export function JudgeAssignmentBoard() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'hackathon_present_teams_assignments.csv');
+    link.setAttribute('download', 'hackathon_judge_assignments.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const exportAssignmentsPDF = async () => {
-    const presentTeams = teams.filter(t => t.attendance);
+    const targetTeams = (searchTerm || filterJudge || filterTrack) ? filteredTeams : teams;
     const jsPDF = (await import('jspdf')).default;
     const autoTable = (await import('jspdf-autotable')).default;
     
     const doc = new jsPDF('landscape');
     
     doc.setFontSize(16);
-    doc.text("Present Teams - Judge Assignments", 14, 15);
+    doc.text("Judge Assignments", 14, 15);
     
     doc.setFontSize(10);
-    doc.text(`Total Present Teams: ${presentTeams.length}`, 14, 22);
+    doc.text(`Total Teams: ${targetTeams.length}`, 14, 22);
     
     const tableColumn = ["Team Name", "Team ID", "Problem Statement", "Track", "Assigned Judges"];
-    const tableRows = presentTeams.map(t => {
+    const tableRows = targetTeams.map(t => {
       return [
         t.name,
         t.uniqueId,
@@ -154,7 +154,7 @@ export function JudgeAssignmentBoard() {
       headStyles: { fillColor: [79, 70, 229] }
     });
     
-    doc.save("hackathon_present_teams_assignments.pdf");
+    doc.save("hackathon_judge_assignments.pdf");
   };
 
   return (
