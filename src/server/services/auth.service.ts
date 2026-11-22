@@ -92,7 +92,12 @@ export async function loginStaff(uniqueId: string, password: string) {
     permissions: finalPermissions
   });
 
-  return { success: true, token, role: user.role };
+  return { 
+    success: true, 
+    token, 
+    role: user.role, 
+    assessmentMode: user.assessmentMode || 'virtual' 
+  };
 }
 
 

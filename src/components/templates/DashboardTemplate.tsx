@@ -33,7 +33,15 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('judge_mode');
+        document.cookie = 'judge_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      }
+    } catch {}
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
     router.push('/');
   };
 

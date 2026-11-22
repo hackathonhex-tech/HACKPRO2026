@@ -15,6 +15,10 @@ export default function JudgeScannerPage() {
   const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' | 'info' } | null>(null);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('judge_mode') === 'offline') {
+      router.replace('/judge/dashboard');
+      return;
+    }
     async function verifyJudgeMode() {
       try {
         const res = await getMeAction();

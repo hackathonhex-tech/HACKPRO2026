@@ -20,7 +20,17 @@ export async function loginStaffAction(uniqueId: string, password: string) {
       maxAge: 60 * 60 * 24 
     });
 
-    return { success: true, role: result.role };
+    const mode = (result as any).assessmentMode || 'virtual';
+    if (result.role === 'judge') {
+      cookieStore.set('judge_mode', mode, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 60 * 60 * 24
+      });
+    }
+
+    return { success: true, role: result.role, assessmentMode: mode };
   } catch (error) {
     console.error('Login Error:', error);
     return { success: false, message: 'Internal Server Error' };
@@ -42,7 +52,18 @@ export async function unifiedLoginAction(identifier: string, passwordSecret: str
         path: '/', 
         maxAge: 60 * 60 * 24 
       });
-      return { success: true, role: staffRes.role };
+
+      const mode = (staffRes as any).assessmentMode || 'virtual';
+      if (staffRes.role === 'judge') {
+        cookieStore.set('judge_mode', mode, {
+          httpOnly: false,
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: 60 * 60 * 24
+        });
+      }
+
+      return { success: true, role: staffRes.role, assessmentMode: mode };
     }
 
     // 2. Attempt Team / Student login
@@ -101,3 +122,16 @@ export async function getMeAction(): Promise<{ success: boolean; user: any }> {
 
   return { success: true, user: auth.user };
 }
+
+export async function logoutAction(): Promise<{ success: boolean }> {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete('token');
+    cookieStore.delete('judge_mode');
+    return { success: true };
+  } catch (err) {
+    console.error('Logout error:', err);
+    return { success: false };
+  }
+}
+

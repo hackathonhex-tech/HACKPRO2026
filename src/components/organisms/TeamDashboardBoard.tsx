@@ -1,9 +1,34 @@
 "use client";
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Clock, FileText, Download, User, Building, Phone, Mail, MessageSquare } from 'lucide-react';
+
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  ctx.beginPath();
+  if (typeof (ctx as any).roundRect === 'function') {
+    (ctx as any).roundRect(x, y, w, h, r);
+  } else {
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+}
 
 export interface TeamDashboardBoardProps {
   team: any;
@@ -12,6 +37,7 @@ export interface TeamDashboardBoardProps {
 
 export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps) {
   const qrCanvasRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const getQRDataUrl = (): string => {
     if (qrCanvasRef.current) {
@@ -23,237 +49,294 @@ export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps)
     return '';
   };
 
-  const downloadTicketPDF = () => {
-    if (!team) return;
-    
-    const qrDataUrl = getQRDataUrl();
-    const canvas = document.createElement('canvas');
-    const width = 1200;
-    const height = 660;
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const downloadTicket = async (format: 'pdf' | 'png' = 'pdf') => {
+    if (!team || downloading) return;
+    setDownloading(true);
 
-    // Outer Card Fill & Border
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    if (typeof (ctx as any).roundRect === 'function') {
-      (ctx as any).roundRect(0, 0, width, height, 24);
-    } else {
-      ctx.rect(0, 0, width, height);
-    }
-    ctx.fill();
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = '#a7f3d0';
-    ctx.stroke();
+    try {
+      const qrDataUrl = getQRDataUrl();
+      const canvas = document.createElement('canvas');
+      const width = 1200;
+      const height = 660;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        setDownloading(false);
+        return;
+      }
 
-    // Left Stub Linear Gradient
-    const grad = ctx.createLinearGradient(0, 0, 380, height);
-    grad.addColorStop(0, '#064e3b');
-    grad.addColorStop(0.5, '#047857');
-    grad.addColorStop(1, '#059669');
-    
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    if (typeof (ctx as any).roundRect === 'function') {
-      (ctx as any).roundRect(0, 0, 380, height, [24, 0, 0, 24]);
-    } else {
-      ctx.rect(0, 0, 380, height);
-    }
-    ctx.fill();
-
-    // Header Badge on Left Stub
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.beginPath();
-    if (typeof (ctx as any).roundRect === 'function') {
-      (ctx as any).roundRect(50, 30, 280, 36, 18);
-    } else {
-      ctx.rect(50, 30, 280, 36);
-    }
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('OFFICIAL TICKET PASS', 190, 53);
-
-    // QR Image Load
-    const finishDownload = (imgLoaded: boolean, imgObj?: HTMLImageElement) => {
-      // QR White Container Box
+      // 1. Solid Pure White Background across entire canvas (0 transparent pixels, eliminates all corner triangles)
       ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      if (typeof (ctx as any).roundRect === 'function') {
-        (ctx as any).roundRect(50, 85, 280, 280, 20);
-      } else {
-        ctx.rect(50, 85, 280, 280);
-      }
-      ctx.fill();
+      ctx.fillRect(0, 0, width, height);
 
-      if (imgLoaded && imgObj) {
-        ctx.drawImage(imgObj, 65, 100, 250, 250);
-      }
+      // 2. Left Stub (Full bleed: 0 to 380, 0 to 660)
+      const grad = ctx.createLinearGradient(0, 0, 380, height);
+      grad.addColorStop(0, '#064e3b');
+      grad.addColorStop(0.5, '#047857');
+      grad.addColorStop(1, '#059669');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 380, height);
 
-      // Unique ID Badge
-      ctx.fillStyle = '#042f22';
+      // 3. Dashed Perforation Line at x = 380
+      ctx.save();
+      ctx.setLineDash([8, 8]);
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      if (typeof (ctx as any).roundRect === 'function') {
-        (ctx as any).roundRect(50, 390, 280, 54, 14);
-      } else {
-        ctx.rect(50, 390, 280, 54);
-      }
+      ctx.moveTo(380, 24);
+      ctx.lineTo(380, height - 24);
+      ctx.stroke();
+      ctx.restore();
+
+      // Top & Bottom Perforation Notches
+      ctx.fillStyle = '#064e3b';
+      ctx.beginPath();
+      ctx.arc(380, 0, 16, 0, Math.PI);
       ctx.fill();
-      ctx.strokeStyle = '#6ee7b7';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#047857';
+      ctx.lineWidth = 2;
       ctx.stroke();
 
-      ctx.fillStyle = '#6ee7b7';
-      ctx.font = 'bold 22px monospace';
+      ctx.fillStyle = '#059669';
+      ctx.beginPath();
+      ctx.arc(380, height, 16, Math.PI, 0);
+      ctx.fill();
+      ctx.strokeStyle = '#047857';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 4. Outer Perimeter Border (Crisp 3px border framing the ticket pass)
+      ctx.strokeStyle = '#047857';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(1.5, 1.5, width - 3, height - 3);
+
+      // 5. Left Stub Content (Header, QR Container, Unique ID, Status)
+      // Header Capsule
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+      drawRoundedRect(ctx, 50, 32, 280, 38, 19);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(team.uniqueId || '', 190, 425);
+      ctx.textBaseline = 'middle';
+      ctx.fillText('OFFICIAL TICKET PASS', 190, 51);
 
-      // Right Content
-      // Team Name
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#064e3b';
-      ctx.font = 'bold 36px sans-serif';
-      const nameText = team.name || 'Team';
-      ctx.fillText(nameText.length > 25 ? nameText.substring(0, 23) + '...' : nameText, 420, 60);
-
-      // College/Department
-      if (team.collegeName || team.department) {
-        ctx.fillStyle = '#047857';
-        ctx.font = '600 13px sans-serif';
-        const sub = `${team.collegeName || ''} ${team.department ? '· ' + team.department : ''}`;
-        ctx.fillText(sub.length > 50 ? sub.substring(0, 47) + '...' : sub, 420, 82);
-      }
-
-      // Participant Pass Badge
-      ctx.fillStyle = '#d1fae5';
-      ctx.beginPath();
-      if (typeof (ctx as any).roundRect === 'function') {
-        (ctx as any).roundRect(980, 30, 180, 34, 8);
-      } else {
-        ctx.rect(980, 30, 180, 34);
-      }
-      ctx.fill();
-      ctx.strokeStyle = '#6ee7b7';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.fillStyle = '#047857';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('PARTICIPANT PASS', 1070, 52);
-
-      // Team Lead Box
-      ctx.fillStyle = '#f0fdf4';
-      ctx.beginPath();
-      if (typeof (ctx as any).roundRect === 'function') {
-        (ctx as any).roundRect(420, 105, 740, 115, 16);
-      } else {
-        ctx.rect(420, 105, 740, 115);
-      }
-      ctx.fill();
-      ctx.strokeStyle = '#a7f3d0';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#047857';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillText('TEAM LEAD DETAILS', 440, 128);
-
-      ctx.fillStyle = '#064e3b';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.fillText(team.leadName || '—', 440, 158);
-
-      ctx.fillStyle = '#047857';
-      ctx.font = '13px sans-serif';
-      const leadSuperset = team.leadSupersetId || team.supersetId || team.members?.[0]?.supersetId || '—';
-      ctx.fillText(`Email: ${team.leadEmail || '—'}  |  Phone: ${team.leadPhone || '—'}  |  Superset ID: ${leadSuperset}`, 440, 190);
-
-      // Problem Statement Box
-      ctx.fillStyle = '#ecfdf5';
-      ctx.beginPath();
-      if (typeof (ctx as any).roundRect === 'function') {
-        (ctx as any).roundRect(420, 235, 740, 100, 16);
-      } else {
-        ctx.rect(420, 235, 740, 100);
-      }
-      ctx.fill();
-      ctx.strokeStyle = '#6ee7b7';
-      ctx.stroke();
-
-      const psTrack = team.problemStatementId?.track || '';
-      ctx.fillStyle = '#047857';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillText(`SELECTED PROBLEM STATEMENT ${psTrack ? `(${psTrack.toUpperCase()})` : ''}`, 440, 258);
-
-      ctx.fillStyle = '#064e3b';
-      ctx.font = 'bold 16px sans-serif';
-      const psTitle = team.problemStatementId?.title || 'Not Selected Yet';
-      ctx.fillText(psTitle.length > 70 ? psTitle.substring(0, 67) + '...' : psTitle, 440, 292);
-
-      // Team Members Section
-      ctx.fillStyle = '#047857';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(`TEAM MEMBERS (${team.members?.length || 0})`, 420, 362);
-
-      const members = team.members || [];
-      const startX = 420;
-      const startY = 378;
-      const cardWidth = 355;
-      const cardHeight = 70;
-
-      members.slice(0, 4).forEach((m: any, idx: number) => {
-        const col = idx % 2;
-        const row = Math.floor(idx / 2);
-        const x = startX + col * (cardWidth + 30);
-        const y = startY + row * (cardHeight + 14);
-
-        ctx.fillStyle = '#f0fdf4';
-        ctx.beginPath();
-        if (typeof (ctx as any).roundRect === 'function') {
-          (ctx as any).roundRect(x, y, cardWidth, cardHeight, 12);
-        } else {
-          ctx.rect(x, y, cardWidth, cardHeight);
-        }
+      const finishExport = async (imgLoaded: boolean, imgObj?: HTMLImageElement) => {
+        // QR Container Box
+        ctx.fillStyle = '#ffffff';
+        drawRoundedRect(ctx, 50, 88, 280, 280, 18);
         ctx.fill();
         ctx.strokeStyle = '#a7f3d0';
+        ctx.lineWidth = 2;
         ctx.stroke();
 
+        if (imgLoaded && imgObj) {
+          ctx.drawImage(imgObj, 65, 103, 250, 250);
+        }
+
+        // Team Unique ID Badge
+        ctx.fillStyle = '#022c22';
+        drawRoundedRect(ctx, 50, 386, 280, 56, 14);
+        ctx.fill();
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#6ee7b7';
+        ctx.font = 'bold 24px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(team.uniqueId || '', 190, 414);
+
+        // Verification Badge
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+        drawRoundedRect(ctx, 50, 458, 280, 36, 18);
+        ctx.fill();
+        ctx.fillStyle = '#a7f3d0';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('SCAN AT EVENT CHECK-IN', 190, 476);
+
+        // Stub Footer Note
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.font = '600 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('HACKPRO 2026 · ADMIT BEARER', 190, 624);
+
+        // 6. Right Body Elements (Team Details, Lead, Problem Statement, Members)
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+
+        // Team Name
         ctx.fillStyle = '#064e3b';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillText(`#${idx + 1} ${m.name || 'Member'}`, x + 14, y + 28);
+        ctx.font = 'bold 34px sans-serif';
+        const nameText = team.name || 'Team';
+        ctx.fillText(nameText.length > 25 ? nameText.substring(0, 23) + '...' : nameText, 425, 62);
+
+        // College & Department
+        if (team.collegeName || team.department) {
+          ctx.fillStyle = '#047857';
+          ctx.font = '600 14px sans-serif';
+          const sub = `${team.collegeName || ''} ${team.department ? '· ' + team.department : ''}`;
+          ctx.fillText(sub.length > 50 ? sub.substring(0, 47) + '...' : sub, 425, 88);
+        }
+
+        // Participant Pass Badge
+        drawRoundedRect(ctx, 975, 34, 190, 36, 18);
+        ctx.fillStyle = '#ecfdf5';
+        ctx.fill();
+        ctx.strokeStyle = '#6ee7b7';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#047857';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('PARTICIPANT PASS', 1070, 52);
+
+        // Card 1: Team Lead Details
+        drawRoundedRect(ctx, 425, 112, 740, 108, 14);
+        ctx.fillStyle = '#f0fdf4';
+        ctx.fill();
+        ctx.strokeStyle = '#bbf7d0';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = '#047857';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('TEAM LEAD DETAILS', 446, 136);
+
+        ctx.fillStyle = '#064e3b';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText(team.leadName || '—', 446, 168);
 
         ctx.fillStyle = '#047857';
-        ctx.font = '12px sans-serif';
-        const detail = m.email || m.phone || m.supersetId || '—';
-        ctx.fillText(detail.length > 35 ? detail.substring(0, 32) + '...' : detail, x + 14, y + 50);
-      });
+        ctx.font = '13px sans-serif';
+        const leadSuperset = team.leadSupersetId || team.supersetId || team.members?.[0]?.supersetId || '—';
+        ctx.fillText(`Email: ${team.leadEmail || '—'}   |   Phone: ${team.leadPhone || '—'}   |   Superset ID: ${leadSuperset}`, 446, 198);
 
-      // Footer Notice
-      ctx.fillStyle = '#059669';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`Present this ticket pass at check-in scanner  ·  Credentials: ${team.leadEmail} / ${team.uniqueId}`, 790, 630);
+        // Card 2: Selected Problem Statement
+        drawRoundedRect(ctx, 425, 234, 740, 96, 14);
+        ctx.fillStyle = '#f0fdf4';
+        ctx.fill();
+        ctx.strokeStyle = '#bbf7d0';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
-      // Download directly to client machine!
-      const dataUrl = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.download = `${(team.name || 'Team').replace(/[^a-z0-9]/gi, '_')}_Ticket_Pass.png`;
-      a.href = dataUrl;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    };
+        const psTrack = team.problemStatementId?.track || '';
+        ctx.fillStyle = '#047857';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(`SELECTED PROBLEM STATEMENT ${psTrack ? `(${psTrack.toUpperCase()})` : ''}`, 446, 258);
 
-    if (qrDataUrl) {
-      const qrImg = new Image();
-      qrImg.onload = () => finishDownload(true, qrImg);
-      qrImg.onerror = () => finishDownload(false);
-      qrImg.src = qrDataUrl;
-    } else {
-      finishDownload(false);
+        ctx.fillStyle = '#064e3b';
+        ctx.font = 'bold 17px sans-serif';
+        const psTitle = team.problemStatementId?.title || 'Not Selected Yet';
+        ctx.fillText(psTitle.length > 70 ? psTitle.substring(0, 67) + '...' : psTitle, 446, 294);
+
+        // Card 3: Team Members Section
+        ctx.fillStyle = '#047857';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText(`TEAM MEMBERS (${team.members?.length || 0})`, 425, 360);
+
+        const members = team.members || [];
+        const startX = 425;
+        const startY = 376;
+        const cardWidth = 355;
+        const cardHeight = 66;
+
+        members.slice(0, 4).forEach((m: any, idx: number) => {
+          const col = idx % 2;
+          const row = Math.floor(idx / 2);
+          const x = startX + col * (cardWidth + 30);
+          const y = startY + row * (cardHeight + 12);
+
+          drawRoundedRect(ctx, x, y, cardWidth, cardHeight, 12);
+          ctx.fillStyle = '#f0fdf4';
+          ctx.fill();
+          ctx.strokeStyle = '#bbf7d0';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.fillStyle = '#064e3b';
+          ctx.font = 'bold 14px sans-serif';
+          ctx.fillText(`#${idx + 1} ${m.name || 'Member'}`, x + 16, y + 27);
+
+          ctx.fillStyle = '#047857';
+          ctx.font = '12px sans-serif';
+          const detail = `${m.email || '—'}${m.supersetId ? `  ·  Superset: ${m.supersetId}` : ''}`;
+          ctx.fillText(detail.length > 36 ? detail.substring(0, 33) + '...' : detail, x + 16, y + 49);
+        });
+
+        // Footer Bar
+        drawRoundedRect(ctx, 425, 606, 740, 36, 18);
+        ctx.fillStyle = '#ecfdf5';
+        ctx.fill();
+        ctx.strokeStyle = '#bbf7d0';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#047857';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`Present this ticket pass at check-in scanner  ·  Credentials: ${team.leadEmail || '—'} / ${team.uniqueId}`, 795, 624);
+
+        const cleanName = (team.name || 'Team').replace(/[^a-z0-9]/gi, '_');
+
+        if (format === 'png') {
+          const dataUrl = canvas.toDataURL('image/png', 1.0);
+          const a = document.createElement('a');
+          a.download = `${cleanName}_Ticket_Pass.png`;
+          a.href = dataUrl;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setDownloading(false);
+          return;
+        }
+
+        // True PDF export via jsPDF
+        try {
+          const { jsPDF } = await import('jspdf');
+          const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'px',
+            format: [1200, 660],
+            hotfixes: ['px_scaling'],
+          });
+          const dataUrl = canvas.toDataURL('image/png', 1.0);
+          pdf.addImage(dataUrl, 'PNG', 0, 0, 1200, 660);
+          pdf.save(`${cleanName}_Ticket_Pass.pdf`);
+        } catch (pdfErr) {
+          console.error('PDF generation error, falling back to PNG:', pdfErr);
+          const dataUrl = canvas.toDataURL('image/png', 1.0);
+          const a = document.createElement('a');
+          a.download = `${cleanName}_Ticket_Pass.png`;
+          a.href = dataUrl;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } finally {
+          setDownloading(false);
+        }
+      };
+
+      if (qrDataUrl) {
+        const qrImg = new Image();
+        qrImg.onload = () => finishExport(true, qrImg);
+        qrImg.onerror = () => finishExport(false);
+        qrImg.src = qrDataUrl;
+      } else {
+        finishExport(false);
+      }
+    } catch (err) {
+      console.error('Download ticket error:', err);
+      setDownloading(false);
     }
   };
 
@@ -328,12 +411,23 @@ export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps)
                 </div>
               </div>
 
-              <button 
-                onClick={downloadTicketPDF}
-                className="mt-8 w-full flex items-center justify-center text-sm font-bold bg-[#3c2cda] text-white hover:bg-[#2e21ad] py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-[#3c2cda]/30"
-              >
-                <Download className="w-4 h-4 mr-2" /> Download Ticket as PDF
-              </button>
+              <div className="mt-8 space-y-2">
+                <button 
+                  onClick={() => downloadTicket('pdf')}
+                  disabled={downloading}
+                  className="w-full flex items-center justify-center text-sm font-bold bg-[#3c2cda] text-white hover:bg-[#2e21ad] py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-[#3c2cda]/30 disabled:opacity-60 cursor-pointer"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {downloading ? 'Preparing Ticket...' : 'Download Ticket as PDF'}
+                </button>
+                <button 
+                  onClick={() => downloadTicket('png')}
+                  disabled={downloading}
+                  className="w-full flex items-center justify-center text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 py-1 transition-colors cursor-pointer"
+                >
+                  Download as Image (PNG)
+                </button>
+              </div>
             </div>
           </div>
         </div>

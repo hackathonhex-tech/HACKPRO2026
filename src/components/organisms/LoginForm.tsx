@@ -41,9 +41,16 @@ export const LoginForm: React.FC = () => {
       const data = await unifiedLoginAction(id, password);
 
       if (data.success) {
-        if (data.role === 'admin' || data.role === 'sub-admin') router.push('/admin/dashboard');
-        else if (data.role === 'judge') router.push('/judge/dashboard');
-        else if (data.role === 'team') router.push('/team/dashboard');
+        if (data.role === 'admin' || data.role === 'sub-admin') {
+          router.push('/admin/dashboard');
+        } else if (data.role === 'judge') {
+          if (typeof window !== 'undefined' && (data as any).assessmentMode) {
+            localStorage.setItem('judge_mode', (data as any).assessmentMode);
+          }
+          router.push('/judge/dashboard');
+        } else if (data.role === 'team') {
+          router.push('/team/dashboard');
+        }
       } else {
         setError(data.message || 'Login failed. Please check your credentials.');
       }
