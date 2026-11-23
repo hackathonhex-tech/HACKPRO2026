@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 
 const TeamMemberSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  empId: { type: String },
+  place: { type: String },
   supersetId: { type: String },
   contact: { type: String },
   email: { type: String },
@@ -18,6 +20,8 @@ const TeamSchema = new mongoose.Schema({
   leadName: { type: String, required: true },
   leadEmail: { type: String, required: true },
   leadPhone: { type: String },
+  leadEmpId: { type: String },
+  place: { type: String },
   leadSupersetId: { type: String },
   supersetId: { type: String },
   collegeName: { type: String },

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from 'react';
-import { Plus, Copy, CheckCircle, Trash2, Edit3, X, Save, Download, FileText, Eye, Users, User, Phone, Mail, Building } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { Plus, Copy, CheckCircle, Trash2, Edit3, X, Save, Download, FileText, Eye, Users, User, Phone, Mail, Building, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { resendTeamEmailAction } from '@/server/actions/admin.team.actions';
 import { Button } from '../atoms/Button';
@@ -55,6 +56,75 @@ export function UserManagementBoard({
   onEditRole
 }: UserManagementBoardProps) {
   const [activeTab, setActiveTab] = useState<'judges' | 'teams' | 'subadmins' | 'roles'>('judges');
+  const router = useRouter();
+
+  // Cross-team duplicate member detection
+  const { teamConflictMap, memberConflictMap } = useMemo(() => {
+    const empIdMap = new Map<string, string[]>();
+    const emailMap = new Map<string, string[]>();
+
+    teams.forEach(team => {
+      const tName = team.name || 'Unnamed Team';
+      // Lead checks
+      const leadEmp = (team.leadEmpId || team.leadSupersetId || team.supersetId || '').trim().toLowerCase();
+      const leadMail = (team.leadEmail || '').trim().toLowerCase();
+      if (leadEmp) {
+        if (!empIdMap.has(leadEmp)) empIdMap.set(leadEmp, []);
+        if (!empIdMap.get(leadEmp)!.includes(tName)) empIdMap.get(leadEmp)!.push(tName);
+      }
+      if (leadMail && leadMail.includes('@')) {
+        if (!emailMap.has(leadMail)) emailMap.set(leadMail, []);
+        if (!emailMap.get(leadMail)!.includes(tName)) emailMap.get(leadMail)!.push(tName);
+      }
+
+      // Member checks
+      (team.members || []).forEach((m: any) => {
+        const mEmp = (m.empId || m.supersetId || '').trim().toLowerCase();
+        const mMail = (m.email || m.contact || '').trim().toLowerCase();
+        if (mEmp) {
+          if (!empIdMap.has(mEmp)) empIdMap.set(mEmp, []);
+          if (!empIdMap.get(mEmp)!.includes(tName)) empIdMap.get(mEmp)!.push(tName);
+        }
+        if (mMail && mMail.includes('@')) {
+          if (!emailMap.has(mMail)) emailMap.set(mMail, []);
+          if (!emailMap.get(mMail)!.includes(tName)) emailMap.get(mMail)!.push(tName);
+        }
+      });
+    });
+
+    const memberConflictMap = new Map<string, string[]>();
+    const teamConflictMap = new Map<string, { count: number; otherTeams: string[] }>();
+
+    empIdMap.forEach((teamList, emp) => {
+      if (teamList.length > 1) {
+        memberConflictMap.set(`emp:${emp}`, teamList);
+        teamList.forEach(tName => {
+          if (!teamConflictMap.has(tName)) teamConflictMap.set(tName, { count: 0, otherTeams: [] });
+          const entry = teamConflictMap.get(tName)!;
+          entry.count++;
+          teamList.filter(t => t !== tName).forEach(other => {
+            if (!entry.otherTeams.includes(other)) entry.otherTeams.push(other);
+          });
+        });
+      }
+    });
+
+    emailMap.forEach((teamList, mail) => {
+      if (teamList.length > 1) {
+        memberConflictMap.set(`mail:${mail}`, teamList);
+        teamList.forEach(tName => {
+          if (!teamConflictMap.has(tName)) teamConflictMap.set(tName, { count: 0, otherTeams: [] });
+          const entry = teamConflictMap.get(tName)!;
+          entry.count++;
+          teamList.filter(t => t !== tName).forEach(other => {
+            if (!entry.otherTeams.includes(other)) entry.otherTeams.push(other);
+          });
+        });
+      }
+    });
+
+    return { teamConflictMap, memberConflictMap };
+  }, [teams]);
 
   // New Judge Form
   const [judgeName, setJudgeName] = useState('');
@@ -647,6 +717,9 @@ export function UserManagementBoard({
               }} leftIcon={<Plus className="w-4 h-4" />}>
                 Add Team
               </Button>
+              <Button size="sm" variant="outline" onClick={() => router.push('/admin/import-teams')} leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-600" />}>
+                Import CSV
+              </Button>
               <Button size="sm" variant="outline" onClick={exportTeamsCSV} leftIcon={<Download className="w-4 h-4" />}>
                 Export CSV
               </Button>
@@ -673,10 +746,31 @@ export function UserManagementBoard({
                   {filteredTeams.length === 0 ? (
                     <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500 italic">No teams found matching the criteria.</td></tr>
                   ) : (
-                    paginatedTeams.map(team => (
-                      <tr key={team._id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+                    paginatedTeams.map(team => {
+                      const hasConflict = teamConflictMap.has(team.name);
+                      const conflictInfo = teamConflictMap.get(team.name);
+                      return (
+                      <tr 
+                        key={team._id} 
+                        className={`border-b transition-colors ${
+                          hasConflict
+                            ? 'border-amber-200 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-950/20 hover:bg-amber-100/60 dark:hover:bg-amber-900/30'
+                            : 'border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/20'
+                        }`}
+                      >
                         <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">
-                          {team.name}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span>{team.name}</span>
+                            {hasConflict && (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-white shadow-xs"
+                                title={`Duplicate member in: ${conflictInfo?.otherTeams.join(', ')}`}
+                              >
+                                <AlertTriangle className="w-3 h-3" />
+                                Duplicate Member
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-2">
@@ -712,7 +806,8 @@ export function UserManagementBoard({
                           </div>
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -1200,6 +1295,16 @@ export function UserManagementBoard({
       <Modal isOpen={!!viewingTeam} onClose={() => setViewingTeam(null)} title={viewingTeam?.name} maxWidth="3xl">
         {viewingTeam && (
           <div className="space-y-6 pb-6">
+            {/* Cross-Team Conflict Team Banner */}
+            {teamConflictMap.has(viewingTeam.name) && (
+              <div className="p-4 rounded-2xl bg-amber-500 text-white text-xs font-black flex items-center gap-2.5 shadow-sm">
+                <AlertTriangle className="w-5 h-5 shrink-0" />
+                <span>
+                  WARNING: CROSS-TEAM CONFLICT DETECTED. One or more members of this team are also registered in: {teamConflictMap.get(viewingTeam.name)?.otherTeams.join(', ')}
+                </span>
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">ID: {viewingTeam.uniqueId}</span>
               <span className="text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 px-3 py-1.5 rounded-xl border border-amber-200/60 dark:border-amber-500/20">Track: {viewingTeam.problemStatementId?.track || 'N/A'}</span>
@@ -1211,76 +1316,107 @@ export function UserManagementBoard({
             </div>
 
             {/* Team Lead Section */}
-            <div className="bg-slate-50/80 dark:bg-slate-900/60 rounded-2xl p-6 border border-slate-200/70 dark:border-slate-700/60 shadow-xs">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center">
-                <User className="w-4 h-4 mr-2 text-indigo-500" /> TEAM LEAD
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-400 font-bold mb-1">Name</p>
-                  <p className="font-medium text-slate-900 dark:text-white truncate">{viewingTeam.leadName || 'Not provided'}</p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-400 font-bold mb-1">Superset ID</p>
-                  <p className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate">{viewingTeam.leadSupersetId || viewingTeam.supersetId || viewingTeam.members?.[0]?.supersetId || 'Not provided'}</p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-400 font-bold mb-1">Email</p>
-                  <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
-                    <Mail className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
-                    <span className="break-all text-xs sm:text-sm">{viewingTeam.leadEmail || 'Not provided'}</span>
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-400 font-bold mb-1">Phone</p>
-                  <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
-                    <Phone className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
-                    <span className="truncate">{viewingTeam.leadPhone || 'Not provided'}</span>
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-400 font-bold mb-1">College</p>
-                  <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
-                    <Building className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
-                    <span className="truncate" title={viewingTeam.collegeName}>{viewingTeam.collegeName || 'Not provided'}</span>
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-400 font-bold mb-1">Department</p>
-                  <p className="font-medium text-slate-900 dark:text-white truncate" title={viewingTeam.department}>{viewingTeam.department || 'Not provided'}</p>
-                </div>
-              </div>
+            {(() => {
+              const leadEmp = (viewingTeam.leadEmpId || viewingTeam.leadSupersetId || viewingTeam.supersetId || viewingTeam.members?.[0]?.supersetId || '').trim().toLowerCase();
+              const leadMail = (viewingTeam.leadEmail || '').trim().toLowerCase();
+              const leadConflicts = (
+                (leadEmp && memberConflictMap.get(`emp:${leadEmp}`)) ||
+                (leadMail && memberConflictMap.get(`mail:${leadMail}`)) ||
+                []
+              ).filter((t: string) => t !== viewingTeam.name);
 
-              {/* Team Custom Fields */}
-              {viewingTeam.customFields && Object.keys(viewingTeam.customFields).length > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Additional Team Details</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {Object.entries(viewingTeam.customFields).map(([key, val]: [string, any]) => (
-                      <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                        <span className="text-[11px] text-slate-400 block font-medium capitalize">{key.replace(/_/g, ' ')}</span>
-                        <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 break-words">{val?.toString() || '-'}</span>
-                      </div>
-                    ))}
+              return (
+                <div className={`rounded-2xl p-6 border shadow-xs transition-all ${
+                  leadConflicts.length > 0
+                    ? 'bg-amber-50/80 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-600'
+                    : 'bg-slate-50/80 dark:bg-slate-900/60 border-slate-200/70 dark:border-slate-700/60'
+                }`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                      <User className="w-4 h-4 mr-2 text-indigo-500" /> TEAM LEAD
+                    </h4>
+                    {leadConflicts.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500 text-white shadow-xs">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        Duplicate Lead
+                      </span>
+                    )}
                   </div>
-                </div>
-              )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-400 font-bold mb-1">Name</p>
+                      <p className="font-medium text-slate-900 dark:text-white truncate">{viewingTeam.leadName || 'Not provided'}</p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-400 font-bold mb-1">Employee / Superset ID</p>
+                      <p className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate">{viewingTeam.leadEmpId || viewingTeam.leadSupersetId || viewingTeam.supersetId || viewingTeam.members?.[0]?.supersetId || 'Not provided'}</p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-400 font-bold mb-1">Email</p>
+                      <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
+                        <Mail className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
+                        <span className="break-all text-xs sm:text-sm">{viewingTeam.leadEmail || 'Not provided'}</span>
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-400 font-bold mb-1">Phone</p>
+                      <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
+                        <Phone className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
+                        <span className="truncate">{viewingTeam.leadPhone || 'Not provided'}</span>
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-400 font-bold mb-1">Location / Place</p>
+                      <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
+                        <Building className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
+                        <span className="truncate" title={viewingTeam.place || viewingTeam.collegeName}>{viewingTeam.place || viewingTeam.collegeName || 'Not provided'}</span>
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-400 font-bold mb-1">Department</p>
+                      <p className="font-medium text-slate-900 dark:text-white truncate" title={viewingTeam.department}>{viewingTeam.department || 'Not provided'}</p>
+                    </div>
+                  </div>
 
-              {/* Team Lead Custom Fields */}
-              {viewingTeam.members?.[0]?.customFields && Object.keys(viewingTeam.members[0].customFields).length > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Additional Team Lead Details</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {Object.entries(viewingTeam.members[0].customFields).map(([key, val]: [string, any]) => (
-                      <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                        <span className="text-[11px] text-slate-400 block font-medium capitalize">{key.replace(/_/g, ' ')}</span>
-                        <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 break-words">{val?.toString() || '-'}</span>
+                  {leadConflicts.length > 0 && (
+                    <div className="mt-4 p-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold flex items-center gap-2 shadow-xs">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>⚠️ Lead is also registered in team: {leadConflicts.join(', ')}</span>
+                    </div>
+                  )}
+
+                  {/* Team Custom Fields */}
+                  {viewingTeam.customFields && Object.keys(viewingTeam.customFields).length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Additional Team Details</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {Object.entries(viewingTeam.customFields).map(([key, val]: [string, any]) => (
+                          <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <span className="text-[11px] text-slate-400 block font-medium capitalize">{key.replace(/_/g, ' ')}</span>
+                            <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 break-words">{val?.toString() || '-'}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Team Lead Custom Fields */}
+                  {viewingTeam.members?.[0]?.customFields && Object.keys(viewingTeam.members[0].customFields).length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Additional Team Lead Details</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {Object.entries(viewingTeam.members[0].customFields).map(([key, val]: [string, any]) => (
+                          <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <span className="text-[11px] text-slate-400 block font-medium capitalize">{key.replace(/_/g, ' ')}</span>
+                            <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 break-words">{val?.toString() || '-'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
 
             {/* Team Members Section */}
             <div className="space-y-4">
@@ -1294,24 +1430,49 @@ export function UserManagementBoard({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {viewingTeam.members.filter((m: any, idx: number) => !((m.email && m.email === viewingTeam.leadEmail) || (m.name === viewingTeam.leadName && idx === 0))).map((m: any, idx: number) => (
-                    <div key={idx} className="bg-white dark:bg-slate-800/90 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-700/60 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all shadow-xs">
+                  {viewingTeam.members.filter((m: any, idx: number) => !((m.email && m.email === viewingTeam.leadEmail) || (m.name === viewingTeam.leadName && idx === 0))).map((m: any, idx: number) => {
+                    const mEmp = (m.empId || m.supersetId || '').trim().toLowerCase();
+                    const mMail = (m.email || m.contact || '').trim().toLowerCase();
+                    const memberConflicts = (
+                      (mEmp && memberConflictMap.get(`emp:${mEmp}`)) ||
+                      (mMail && memberConflictMap.get(`mail:${mMail}`)) ||
+                      []
+                    ).filter((t: string) => t !== viewingTeam.name);
+                    const isDuplicateMember = memberConflicts.length > 0;
+
+                    return (
+                    <div 
+                      key={idx} 
+                      className={`rounded-2xl p-6 border transition-all shadow-xs ${
+                        isDuplicateMember
+                          ? 'bg-amber-50/70 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-600'
+                          : 'bg-white dark:bg-slate-800/90 border-slate-200/80 dark:border-slate-700/60 hover:border-indigo-200 dark:hover:border-indigo-500/30'
+                      }`}
+                    >
                       <div className="flex items-center justify-between mb-4">
                         <h5 className="font-bold text-slate-900 dark:text-white text-base flex items-center">
                           <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 flex items-center justify-center text-xs font-bold mr-3">{idx + 1}</span>
                           {m.name || 'Unknown Member'}
                         </h5>
-                        {m.supersetId && (
-                          <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1 rounded-xl border border-indigo-100 dark:border-indigo-500/20">
-                            Superset: {m.supersetId}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {isDuplicateMember && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500 text-white shadow-xs">
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              Duplicate Member
+                            </span>
+                          )}
+                          {(m.empId || m.supersetId) && (
+                            <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1 rounded-xl border border-indigo-100 dark:border-indigo-500/20">
+                              ID: {m.empId || m.supersetId}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 text-sm">
                         <div className="min-w-0">
-                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Superset ID</span>
-                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate block text-xs">{m.supersetId || '-'}</span>
+                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Employee ID</span>
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate block text-xs">{m.empId || m.supersetId || '-'}</span>
                         </div>
                         <div className="min-w-0 sm:col-span-1 md:col-span-2 lg:col-span-1">
                           <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Email</span>
@@ -1322,14 +1483,22 @@ export function UserManagementBoard({
                           <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium">{m.phone || (m.contact && !m.contact.includes('@') ? m.contact : '-')}</span>
                         </div>
                         <div className="min-w-0">
-                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">College</span>
-                          <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium" title={m.college}>{m.college || '-'}</span>
+                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Location / Place</span>
+                          <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium" title={m.place || m.college}>{m.place || m.college || '-'}</span>
                         </div>
                         <div className="min-w-0">
                           <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Department</span>
                           <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium" title={m.department}>{m.department || '-'}</span>
                         </div>
                       </div>
+
+                      {/* Duplicate Conflict Warning Box */}
+                      {isDuplicateMember && (
+                        <div className="mt-4 p-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold flex items-center gap-2 shadow-xs">
+                          <AlertTriangle className="w-4 h-4 shrink-0" />
+                          <span>⚠️ Also registered in team: {memberConflicts.join(', ')}</span>
+                        </div>
+                      )}
 
                       {/* Member custom fields */}
                       {m.customFields && Object.keys(m.customFields).length > 0 && (
@@ -1345,7 +1514,8 @@ export function UserManagementBoard({
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

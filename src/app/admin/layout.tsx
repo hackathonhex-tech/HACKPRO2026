@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShieldCheck, LayoutDashboard, Users, ClipboardList, Clock, BarChart, Scan, ClipboardCheck, FileText, Settings, Sliders, Award, FileEdit } from 'lucide-react';
+import { ShieldCheck, LayoutDashboard, Users, ClipboardList, Clock, BarChart, Scan, ClipboardCheck, FileText, Settings, Sliders, Award, FileEdit, FileSpreadsheet } from 'lucide-react';
 import { DashboardTemplate } from '@/components/templates/DashboardTemplate';
 import { getMeAction } from '@/server/actions/auth.actions';
 
@@ -10,6 +10,7 @@ const adminNav = [
   { name: 'QR Scanner', href: '/admin/scanner', icon: Scan, permission: 'scanner' },
   { name: 'User Management', href: '/admin/users', icon: Users, permission: 'manage_users' },
   { name: 'Registration Setup', href: '/admin/registration-fields', icon: FileEdit, permission: 'registration_fields' },
+  { name: 'Import Teams', href: '/admin/import-teams', icon: FileSpreadsheet, permission: 'manage_users' },
   { name: 'Assign Judges', href: '/admin/assign', icon: Users, permission: 'assign_judges' },
   { name: 'Attendance', href: '/admin/attendance', icon: Clock, permission: 'attendance' },
   { name: 'Round Selection', href: '/admin/round-qualification', icon: Award, permission: 'round_selection' },
