@@ -199,22 +199,17 @@ export async function parseAndValidateEmployeeData(rawRows: any[]): Promise<Pars
   }
 
   // 3. Duplicate Member Detection across all teams in this batch + existing DB teams
-  // Index mappings: empId -> Set<teamName>, email -> Set<teamName>
+  // Index mappings: strictly by empId -> Set<teamName>
   const empIdToTeams = new Map<string, Set<string>>();
-  const emailToTeams = new Map<string, Set<string>>();
 
   // Register existing DB teams into tracking
   for (const existing of existingTeams) {
     const tName = `${existing.name} (Existing DB)`;
-    if (existing.leadEmpId) {
-      const k = existing.leadEmpId.toLowerCase();
+    const leadEmp = existing.leadEmpId || existing.leadSupersetId || existing.supersetId;
+    if (leadEmp) {
+      const k = String(leadEmp).trim().toLowerCase();
       if (!empIdToTeams.has(k)) empIdToTeams.set(k, new Set());
       empIdToTeams.get(k)!.add(tName);
-    }
-    if (existing.leadEmail) {
-      const k = existing.leadEmail.toLowerCase();
-      if (!emailToTeams.has(k)) emailToTeams.set(k, new Set());
-      emailToTeams.get(k)!.add(tName);
     }
     if (Array.isArray(existing.members)) {
       for (const m of existing.members) {
@@ -223,11 +218,6 @@ export async function parseAndValidateEmployeeData(rawRows: any[]): Promise<Pars
           const k = String(mEmpId).trim().toLowerCase();
           if (!empIdToTeams.has(k)) empIdToTeams.set(k, new Set());
           empIdToTeams.get(k)!.add(tName);
-        }
-        if (m.email) {
-          const k = String(m.email).trim().toLowerCase();
-          if (!emailToTeams.has(k)) emailToTeams.set(k, new Set());
-          emailToTeams.get(k)!.add(tName);
         }
       }
     }
@@ -241,15 +231,10 @@ export async function parseAndValidateEmployeeData(rawRows: any[]): Promise<Pars
         if (!empIdToTeams.has(k)) empIdToTeams.set(k, new Set());
         empIdToTeams.get(k)!.add(team.name);
       }
-      if (m.email) {
-        const k = m.email.toLowerCase();
-        if (!emailToTeams.has(k)) emailToTeams.set(k, new Set());
-        emailToTeams.get(k)!.add(team.name);
-      }
     }
   }
 
-  // 4. Mark duplicates and conflicts
+  // 4. Mark duplicates and conflicts strictly by Emp_id
   let conflictedTeamsCount = 0;
   const duplicateEmployeeMap: Record<string, string[]> = {};
 
@@ -267,16 +252,6 @@ export async function parseAndValidateEmployeeData(rawRows: any[]): Promise<Pars
             if (t !== team.name) conflictingTeams.add(t);
           }
           duplicateEmployeeMap[`Emp ID: ${m.empId}`] = Array.from(registeredTeams);
-        }
-      }
-
-      if (m.email && emailToTeams.has(m.email.toLowerCase())) {
-        const registeredTeams = emailToTeams.get(m.email.toLowerCase())!;
-        if (registeredTeams.size > 1) {
-          for (const t of registeredTeams) {
-            if (t !== team.name) conflictingTeams.add(t);
-          }
-          duplicateEmployeeMap[`Email: ${m.email}`] = Array.from(registeredTeams);
         }
       }
 

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Copy, CheckCircle, Trash2, Edit3, X, Save, Download, FileText, Eye, Users, User, Phone, Mail, Building, AlertTriangle, FileSpreadsheet } from 'lucide-react';
+import { Plus, Copy, CheckCircle, Trash2, Edit3, X, Save, Download, FileText, Eye, Users, User, Mail, Building, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { resendTeamEmailAction } from '@/server/actions/admin.team.actions';
 import { Button } from '../atoms/Button';
@@ -58,36 +58,25 @@ export function UserManagementBoard({
   const [activeTab, setActiveTab] = useState<'judges' | 'teams' | 'subadmins' | 'roles'>('judges');
   const router = useRouter();
 
-  // Cross-team duplicate member detection
+  // Cross-team duplicate member detection strictly by Emp_id
   const { teamConflictMap, memberConflictMap } = useMemo(() => {
     const empIdMap = new Map<string, string[]>();
-    const emailMap = new Map<string, string[]>();
 
     teams.forEach(team => {
       const tName = team.name || 'Unnamed Team';
       // Lead checks
-      const leadEmp = (team.leadEmpId || team.leadSupersetId || team.supersetId || '').trim().toLowerCase();
-      const leadMail = (team.leadEmail || '').trim().toLowerCase();
+      const leadEmp = (team.leadEmpId || team.leadSupersetId || team.supersetId || team.members?.[0]?.empId || team.members?.[0]?.supersetId || '').trim().toLowerCase();
       if (leadEmp) {
         if (!empIdMap.has(leadEmp)) empIdMap.set(leadEmp, []);
         if (!empIdMap.get(leadEmp)!.includes(tName)) empIdMap.get(leadEmp)!.push(tName);
-      }
-      if (leadMail && leadMail.includes('@')) {
-        if (!emailMap.has(leadMail)) emailMap.set(leadMail, []);
-        if (!emailMap.get(leadMail)!.includes(tName)) emailMap.get(leadMail)!.push(tName);
       }
 
       // Member checks
       (team.members || []).forEach((m: any) => {
         const mEmp = (m.empId || m.supersetId || '').trim().toLowerCase();
-        const mMail = (m.email || m.contact || '').trim().toLowerCase();
         if (mEmp) {
           if (!empIdMap.has(mEmp)) empIdMap.set(mEmp, []);
           if (!empIdMap.get(mEmp)!.includes(tName)) empIdMap.get(mEmp)!.push(tName);
-        }
-        if (mMail && mMail.includes('@')) {
-          if (!emailMap.has(mMail)) emailMap.set(mMail, []);
-          if (!emailMap.get(mMail)!.includes(tName)) emailMap.get(mMail)!.push(tName);
         }
       });
     });
@@ -97,21 +86,7 @@ export function UserManagementBoard({
 
     empIdMap.forEach((teamList, emp) => {
       if (teamList.length > 1) {
-        memberConflictMap.set(`emp:${emp}`, teamList);
-        teamList.forEach(tName => {
-          if (!teamConflictMap.has(tName)) teamConflictMap.set(tName, { count: 0, otherTeams: [] });
-          const entry = teamConflictMap.get(tName)!;
-          entry.count++;
-          teamList.filter(t => t !== tName).forEach(other => {
-            if (!entry.otherTeams.includes(other)) entry.otherTeams.push(other);
-          });
-        });
-      }
-    });
-
-    emailMap.forEach((teamList, mail) => {
-      if (teamList.length > 1) {
-        memberConflictMap.set(`mail:${mail}`, teamList);
+        memberConflictMap.set(emp, teamList);
         teamList.forEach(tName => {
           if (!teamConflictMap.has(tName)) teamConflictMap.set(tName, { count: 0, otherTeams: [] });
           const entry = teamConflictMap.get(tName)!;
@@ -1317,13 +1292,8 @@ export function UserManagementBoard({
 
             {/* Team Lead Section */}
             {(() => {
-              const leadEmp = (viewingTeam.leadEmpId || viewingTeam.leadSupersetId || viewingTeam.supersetId || viewingTeam.members?.[0]?.supersetId || '').trim().toLowerCase();
-              const leadMail = (viewingTeam.leadEmail || '').trim().toLowerCase();
-              const leadConflicts = (
-                (leadEmp && memberConflictMap.get(`emp:${leadEmp}`)) ||
-                (leadMail && memberConflictMap.get(`mail:${leadMail}`)) ||
-                []
-              ).filter((t: string) => t !== viewingTeam.name);
+              const leadEmp = (viewingTeam.leadEmpId || viewingTeam.leadSupersetId || viewingTeam.supersetId || viewingTeam.members?.[0]?.empId || viewingTeam.members?.[0]?.supersetId || '').trim().toLowerCase();
+              const leadConflicts = (leadEmp && memberConflictMap.get(leadEmp) ? memberConflictMap.get(leadEmp)! : []).filter((t: string) => t !== viewingTeam.name);
 
               return (
                 <div className={`rounded-2xl p-6 border shadow-xs transition-all ${
@@ -1342,39 +1312,28 @@ export function UserManagementBoard({
                       </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="min-w-0">
-                      <p className="text-xs text-slate-400 font-bold mb-1">Name</p>
-                      <p className="font-medium text-slate-900 dark:text-white truncate">{viewingTeam.leadName || 'Not provided'}</p>
+                      <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">Employee Name</p>
+                      <p className="font-semibold text-slate-900 dark:text-white truncate">{viewingTeam.leadName || 'Not provided'}</p>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs text-slate-400 font-bold mb-1">Employee / Superset ID</p>
-                      <p className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate">{viewingTeam.leadEmpId || viewingTeam.leadSupersetId || viewingTeam.supersetId || viewingTeam.members?.[0]?.supersetId || 'Not provided'}</p>
+                      <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">Employee ID</p>
+                      <p className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate">{viewingTeam.leadEmpId || viewingTeam.leadSupersetId || viewingTeam.supersetId || viewingTeam.members?.[0]?.empId || viewingTeam.members?.[0]?.supersetId || 'Not provided'}</p>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs text-slate-400 font-bold mb-1">Email</p>
+                      <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">Email Address</p>
                       <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
                         <Mail className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
                         <span className="break-all text-xs sm:text-sm">{viewingTeam.leadEmail || 'Not provided'}</span>
                       </p>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs text-slate-400 font-bold mb-1">Phone</p>
-                      <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
-                        <Phone className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
-                        <span className="truncate">{viewingTeam.leadPhone || 'Not provided'}</span>
-                      </p>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-slate-400 font-bold mb-1">Location / Place</p>
+                      <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">Location / Place</p>
                       <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
                         <Building className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
                         <span className="truncate" title={viewingTeam.place || viewingTeam.collegeName}>{viewingTeam.place || viewingTeam.collegeName || 'Not provided'}</span>
                       </p>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-slate-400 font-bold mb-1">Department</p>
-                      <p className="font-medium text-slate-900 dark:text-white truncate" title={viewingTeam.department}>{viewingTeam.department || 'Not provided'}</p>
                     </div>
                   </div>
 
@@ -1384,36 +1343,6 @@ export function UserManagementBoard({
                       <span>⚠️ Lead is also registered in team: {leadConflicts.join(', ')}</span>
                     </div>
                   )}
-
-                  {/* Team Custom Fields */}
-                  {viewingTeam.customFields && Object.keys(viewingTeam.customFields).length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
-                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Additional Team Details</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {Object.entries(viewingTeam.customFields).map(([key, val]: [string, any]) => (
-                          <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                            <span className="text-[11px] text-slate-400 block font-medium capitalize">{key.replace(/_/g, ' ')}</span>
-                            <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 break-words">{val?.toString() || '-'}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Team Lead Custom Fields */}
-                  {viewingTeam.members?.[0]?.customFields && Object.keys(viewingTeam.members[0].customFields).length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
-                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Additional Team Lead Details</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {Object.entries(viewingTeam.members[0].customFields).map(([key, val]: [string, any]) => (
-                          <div key={key} className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                            <span className="text-[11px] text-slate-400 block font-medium capitalize">{key.replace(/_/g, ' ')}</span>
-                            <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 break-words">{val?.toString() || '-'}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })()}
@@ -1421,7 +1350,7 @@ export function UserManagementBoard({
             {/* Team Members Section */}
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                <Users className="w-4 h-4 mr-2 text-indigo-500" /> ADDITIONAL TEAM MEMBERS ({viewingTeam.members ? viewingTeam.members.filter((m: any, idx: number) => !((m.email && m.email === viewingTeam.leadEmail) || (m.name === viewingTeam.leadName && idx === 0))).length : 0})
+                <Users className="w-4 h-4 mr-2 text-indigo-500" /> TEAM MEMBERS ({viewingTeam.members ? viewingTeam.members.filter((m: any, idx: number) => !((m.email && m.email === viewingTeam.leadEmail) || (m.name === viewingTeam.leadName && idx === 0))).length : 0})
               </h4>
 
               {(!viewingTeam.members || viewingTeam.members.filter((m: any, idx: number) => !((m.email && m.email === viewingTeam.leadEmail) || (m.name === viewingTeam.leadName && idx === 0))).length === 0) ? (
@@ -1432,12 +1361,7 @@ export function UserManagementBoard({
                 <div className="space-y-4">
                   {viewingTeam.members.filter((m: any, idx: number) => !((m.email && m.email === viewingTeam.leadEmail) || (m.name === viewingTeam.leadName && idx === 0))).map((m: any, idx: number) => {
                     const mEmp = (m.empId || m.supersetId || '').trim().toLowerCase();
-                    const mMail = (m.email || m.contact || '').trim().toLowerCase();
-                    const memberConflicts = (
-                      (mEmp && memberConflictMap.get(`emp:${mEmp}`)) ||
-                      (mMail && memberConflictMap.get(`mail:${mMail}`)) ||
-                      []
-                    ).filter((t: string) => t !== viewingTeam.name);
+                    const memberConflicts = (mEmp && memberConflictMap.get(mEmp) ? memberConflictMap.get(mEmp)! : []).filter((t: string) => t !== viewingTeam.name);
                     const isDuplicateMember = memberConflicts.length > 0;
 
                     return (
@@ -1469,26 +1393,18 @@ export function UserManagementBoard({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         <div className="min-w-0">
                           <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Employee ID</span>
                           <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate block text-xs">{m.empId || m.supersetId || '-'}</span>
                         </div>
-                        <div className="min-w-0 sm:col-span-1 md:col-span-2 lg:col-span-1">
-                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Email</span>
+                        <div className="min-w-0">
+                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Email Address</span>
                           <span className="text-slate-700 dark:text-slate-300 break-all block text-xs font-medium" title={m.email}>{m.email || '-'}</span>
                         </div>
                         <div className="min-w-0">
-                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Phone</span>
-                          <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium">{m.phone || (m.contact && !m.contact.includes('@') ? m.contact : '-')}</span>
-                        </div>
-                        <div className="min-w-0">
                           <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Location / Place</span>
-                          <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium" title={m.place || m.college}>{m.place || m.college || '-'}</span>
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Department</span>
-                          <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium" title={m.department}>{m.department || '-'}</span>
+                          <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium" title={m.place || m.college || viewingTeam.place || viewingTeam.collegeName}>{m.place || m.college || viewingTeam.place || viewingTeam.collegeName || '-'}</span>
                         </div>
                       </div>
 
@@ -1497,20 +1413,6 @@ export function UserManagementBoard({
                         <div className="mt-4 p-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold flex items-center gap-2 shadow-xs">
                           <AlertTriangle className="w-4 h-4 shrink-0" />
                           <span>⚠️ Also registered in team: {memberConflicts.join(', ')}</span>
-                        </div>
-                      )}
-
-                      {/* Member custom fields */}
-                      {m.customFields && Object.keys(m.customFields).length > 0 && (
-                        <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-700/40">
-                          <span className="text-[10px] text-slate-400 font-bold block mb-1.5 uppercase tracking-wider">Custom Details</span>
-                          <div className="flex flex-wrap gap-2">
-                            {Object.entries(m.customFields).map(([k, v]: [string, any]) => (
-                              <span key={k} className="inline-flex items-center text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-600/60">
-                                <strong className="font-semibold mr-1 capitalize">{k.replace(/_/g, ' ')}:</strong> {v?.toString() || '-'}
-                              </span>
-                            ))}
-                          </div>
                         </div>
                       )}
                     </div>
