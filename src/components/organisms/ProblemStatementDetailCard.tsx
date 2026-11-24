@@ -10,6 +10,7 @@ interface ProblemStatementDetailCardProps {
   slotsOver: boolean;
   selecting: boolean;
   selectedStack: string;
+  isLead?: boolean;
   setSelecting: (val: boolean) => void;
   setSelectedStack: (stack: string) => void;
   onSelectProblemStatement: () => void;
@@ -111,6 +112,7 @@ export const ProblemStatementDetailCard: React.FC<ProblemStatementDetailCardProp
   slotsOver,
   selecting,
   selectedStack,
+  isLead = true,
   setSelecting,
   setSelectedStack,
   onSelectProblemStatement
@@ -170,6 +172,15 @@ export const ProblemStatementDetailCard: React.FC<ProblemStatementDetailCardProp
                <h4 className="font-bold text-red-800 dark:text-red-400 text-lg">Slots Over</h4>
                <p className="text-red-600 dark:text-red-300/80 mt-1">This problem statement has reached its maximum capacity and cannot be selected.</p>
              </div>
+          ) : isLead === false ? (
+            <div className="p-5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Lock className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                <p className="text-sm text-slate-600 dark:text-slate-300 font-semibold">
+                  Problem statement selection is reserved for your Team Leader (<span className="text-[#3760F8] font-bold">{team?.leadName || 'Team Lead'}</span>).
+                </p>
+              </div>
+            </div>
           ) : selecting ? (
             <div className="space-y-6 max-w-xl">
               <div>

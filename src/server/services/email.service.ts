@@ -85,22 +85,36 @@ export async function sendRegistrationTicketEmail(team: any) {
       <!-- Credentials Card -->
       <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; border-radius: 8px; padding: 18px 20px; margin-bottom: 28px;">
         <h3 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #0284c7; margin: 0 0 12px 0;">
-          Team Portal Access Credentials
+          Team Portal Access & Login Credentials
         </h3>
         <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
           <tr>
-            <td style="padding: 5px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #475569; width: 140px;">Team ID:</td>
-            <td style="padding: 5px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 14px; font-weight: 700; color: #0284c7;">${teamId}</td>
+            <td style="padding: 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #475569; width: 150px;">Team ID / Code:</td>
+            <td style="padding: 6px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 14px; font-weight: 700; color: #0284c7;">${teamId}</td>
           </tr>
           <tr>
-            <td style="padding: 5px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #475569;">Login Email:</td>
-            <td style="padding: 5px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 600; color: #0f172a;">${leadEmail}</td>
+            <td style="padding: 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #475569;">Login Email (Leader):</td>
+            <td style="padding: 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 600; color: #0f172a;">${leadEmail}</td>
           </tr>
           <tr>
-            <td style="padding: 5px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #475569;">Access Key:</td>
-            <td style="padding: 5px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 14px; font-weight: 700; color: #0284c7;">${teamId}</td>
+            <td style="padding: 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #475569;">Login Email (Members):</td>
+            <td style="padding: 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 600; color: #0f172a;">Each Member's Registered Email ID</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #475569;">Password / Secret:</td>
+            <td style="padding: 6px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 14px; font-weight: 700; color: #0284c7;">${teamId}</td>
           </tr>
         </table>
+
+        <!-- Member Access & Problem Statement Rules Banner -->
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #cbd5e1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; line-height: 1.6;">
+          <div style="margin-bottom: 8px; color: #0369a1;">
+            <strong>👥 Team Member Portal Access:</strong> All team members have direct portal access! Each member can sign in using their <strong>own registered email ID</strong> and the shared Team Code (<strong>${teamId}</strong>).
+          </div>
+          <div style="color: #b45309; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 12px; font-weight: 600;">
+            ⚠️ <strong>Problem Statement Selection:</strong> Selection and locking of the problem statement is strictly reserved for the <strong>Team Leader (${leadName})</strong>. Team members can view problem statements, track status, and participate in project submissions.
+          </div>
+        </div>
       </div>
 
       <!-- Ticket Pass Card -->
@@ -189,17 +203,36 @@ export async function sendRegistrationTicketEmail(team: any) {
       });
     }
 
+    // Build recipient list including lead and all team members with valid emails
+    const seenEmails = new Set<string>();
+    const recipients: { email: string; name: string }[] = [];
+
+    if (leadEmail && leadEmail.includes('@')) {
+      seenEmails.add(leadEmail.toLowerCase().trim());
+      recipients.push({ email: leadEmail.trim(), name: leadName });
+    }
+
+    if (Array.isArray(team.members)) {
+      for (const m of team.members) {
+        const memEmail = (m.email || '').toLowerCase().trim();
+        if (memEmail && memEmail.includes('@') && !seenEmails.has(memEmail)) {
+          seenEmails.add(memEmail);
+          recipients.push({ email: m.email.trim(), name: m.name || 'Team Member' });
+        }
+      }
+    }
+
+    // Fallback if no valid emails found
+    if (recipients.length === 0 && leadEmail) {
+      recipients.push({ email: leadEmail, name: leadName });
+    }
+
     const payload: any = {
       sender: {
         name: senderName,
         email: senderEmail
       },
-      to: [
-        {
-          email: leadEmail,
-          name: leadName
-        }
-      ],
+      to: recipients,
       subject: `HACKPRO 2026 - Registration & Ticket Confirmation: ${teamName}`,
       htmlContent
     };

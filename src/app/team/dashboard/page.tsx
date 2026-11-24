@@ -9,6 +9,7 @@ import { getTeamByUniqueIdAction } from '@/server/actions/team.actions';
 export default function TeamDashboard() {
   const [team, setTeam] = useState<any>(null);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchTeamData = async () => {
@@ -18,6 +19,10 @@ export default function TeamDashboard() {
     if (!authData.success) {
       setLoading(false);
       return;
+    }
+
+    if ((authData as any).user) {
+      setCurrentUser((authData as any).user);
     }
     
     if ((authData as any).user?.uniqueId) {
@@ -36,12 +41,12 @@ export default function TeamDashboard() {
   }, []);
 
   if (loading) {
-    return <LoadingScreen variant="dashboard" />;
+    return <LoadingScreen variant="cyclic" />;
   }
 
   if (!team) {
     return <div className="text-center py-20 text-slate-500">Error loading team data.</div>;
   }
 
-  return <TeamDashboardBoard team={team} feedbacks={feedbacks} />;
+  return <TeamDashboardBoard team={team} feedbacks={feedbacks} currentUser={currentUser} />;
 }

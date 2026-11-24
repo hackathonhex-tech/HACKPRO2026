@@ -121,12 +121,16 @@ export async function getTeamDeliverable(teamId: string, roundId: string) {
   return { success: true, deliverable };
 }
 
-export async function selectProblemStatement(teamId: string, problemStatementId: string, selectedStack?: string) {
+export async function selectProblemStatement(teamId: string, problemStatementId: string, selectedStack?: string, userEmail?: string) {
   const existingTeam = await getTeamByIdWithProblemStatement(teamId);
   if (!existingTeam) {
     return { success: false, message: 'Team not found' };
   }
   
+  if (userEmail && existingTeam.leadEmail && userEmail.toLowerCase().trim() !== existingTeam.leadEmail.toLowerCase().trim()) {
+    return { success: false, message: 'Only the Team Leader is authorized to select or change the problem statement.' };
+  }
+
   if (existingTeam.problemStatementId) {
     return { success: false, message: 'Problem statement already selected and locked.' };
   }

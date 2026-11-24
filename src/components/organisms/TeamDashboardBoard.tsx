@@ -33,9 +33,10 @@ function drawRoundedRect(
 export interface TeamDashboardBoardProps {
   team: any;
   feedbacks: any[];
+  currentUser?: any;
 }
 
-export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps) {
+export function TeamDashboardBoard({ team, feedbacks, currentUser }: TeamDashboardBoardProps) {
   const qrCanvasRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -370,7 +371,14 @@ export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps)
               {/* Lead Info */}
               {team.leadName && (
                 <div className="w-full mt-6 text-left bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-4 border border-indigo-100 dark:border-indigo-500/20">
-                  <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-3">Team Lead</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Team Lead</p>
+                    {currentUser?.email && team.leadEmail && currentUser.email.toLowerCase() === team.leadEmail.toLowerCase() && (
+                      <span className="text-[10px] font-bold bg-[#3760F8] text-white px-2 py-0.5 rounded-full shadow-xs">
+                        You (Leader)
+                      </span>
+                    )}
+                  </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center text-slate-700 dark:text-slate-300">
                       <User className="w-4 h-4 mr-2 text-slate-400 shrink-0" /> <span className="font-bold truncate">{team.leadName}</span>
@@ -408,26 +416,43 @@ export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps)
                   Team Members ({team.members?.length || 0})
                 </p>
                 <div className="space-y-2.5">
-                  {team.members?.map((m: any, i: number) => (
-                    <div key={i} className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-bold text-slate-800 dark:text-white text-sm truncate">{m.name}</span>
-                        {(m.empId || m.supersetId) && (
-                          <span className="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900 shrink-0">
-                            ID: {m.empId || m.supersetId}
+                  {team.members?.map((m: any, i: number) => {
+                    const isCurrentMember = currentUser?.email && m.email && currentUser.email.toLowerCase() === m.email.toLowerCase();
+                    return (
+                      <div 
+                        key={i} 
+                        className={`p-3 rounded-xl border transition-all ${
+                          isCurrentMember 
+                            ? 'bg-blue-50/80 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 ring-1 ring-blue-400/30' 
+                            : 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-700/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-bold text-slate-800 dark:text-white text-sm truncate">{m.name}</span>
+                            {isCurrentMember && (
+                              <span className="text-[10px] font-bold bg-[#3760F8] text-white px-2 py-0.5 rounded-full shrink-0">
+                                You
+                              </span>
+                            )}
+                          </div>
+                          {(m.empId || m.supersetId) && (
+                            <span className="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900 shrink-0">
+                              ID: {m.empId || m.supersetId}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500 gap-2">
+                          <span className="truncate min-w-0" title={m.email || m.contact || ''}>
+                            {m.email || m.contact || '—'}
                           </span>
-                        )}
+                          <span className="truncate font-medium text-slate-600 dark:text-slate-400 shrink-0" title={m.place || m.college || team.place || team.collegeName || ''}>
+                            {m.place || m.college || team.place || team.collegeName || '—'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-500 gap-2">
-                        <span className="truncate min-w-0" title={m.email || m.contact || ''}>
-                          {m.email || m.contact || '—'}
-                        </span>
-                        <span className="truncate font-medium text-slate-600 dark:text-slate-400 shrink-0" title={m.place || m.college || team.place || team.collegeName || ''}>
-                          {m.place || m.college || team.place || team.collegeName || '—'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -457,16 +482,39 @@ export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps)
         <div className="lg:col-span-7 space-y-6">
           
           {/* Login Credentials Card */}
-          <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl border border-indigo-200 dark:border-indigo-500/20 p-6">
-            <h3 className="text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3">Your Login Credentials</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-indigo-100 dark:border-slate-700 min-w-0 overflow-hidden">
-                <p className="text-xs text-slate-500 mb-1">Login ID (Lead Email)</p>
-                <p className="font-mono font-bold text-slate-900 dark:text-white text-sm sm:text-base break-all" title={team.leadEmail}>{team.leadEmail || '—'}</p>
+          <div className="bg-gradient-to-br from-indigo-50/80 via-blue-50/50 to-white dark:from-indigo-950/20 dark:via-slate-850 dark:to-slate-800 rounded-2xl border border-indigo-200/70 dark:border-indigo-500/20 p-5 sm:p-6 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3.5">
+              <h3 className="text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#3760F8]"></span>
+                Portal Login Credentials
+              </h3>
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                All team members can sign in with their registered email
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
+              {/* Login Email */}
+              <div className="md:col-span-7 bg-white dark:bg-slate-800 p-4 rounded-xl border border-indigo-100 dark:border-slate-700 min-w-0 shadow-xs flex flex-col justify-center">
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  {currentUser?.isLead === false ? 'Your Login Email' : 'Login Email'}
+                </p>
+                <p 
+                  className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm md:text-[14px] truncate select-all tracking-tight" 
+                  title={currentUser?.email || team.leadEmail || '—'}
+                >
+                  {currentUser?.email || team.leadEmail || '—'}
+                </p>
               </div>
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-indigo-100 dark:border-slate-700 min-w-0 overflow-hidden">
-                <p className="text-xs text-slate-500 mb-1">Password (Team ID)</p>
-                <p className="font-mono font-bold text-slate-900 dark:text-white text-sm sm:text-base break-all">{team.uniqueId}</p>
+
+              {/* Password / Team Code */}
+              <div className="md:col-span-5 bg-white dark:bg-slate-800 p-4 rounded-xl border border-indigo-100 dark:border-slate-700 min-w-0 shadow-xs flex flex-col justify-center">
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Password (Team Code)
+                </p>
+                <p className="font-mono font-black text-indigo-600 dark:text-indigo-400 text-sm sm:text-base truncate select-all">
+                  {team.uniqueId}
+                </p>
               </div>
             </div>
           </div>

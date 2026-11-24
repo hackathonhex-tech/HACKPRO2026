@@ -68,10 +68,19 @@ export async function getDeliverableAction(teamId: string, roundId: string) {
 export async function selectProblemStatementAction(teamId: string, problemStatementId: string, selectedStack?: string) {
   try {
     const auth = await verifyApiAuth('team');
-    if (!auth.authenticated) {
-      return { success: false, message: auth.error };
+    if (!auth.authenticated || !auth.user) {
+      return { success: false, message: auth.error || 'Unauthorized' };
     }
-    return await teamService.selectProblemStatement(teamId, problemStatementId, selectedStack);
+
+    // Role check: Only the Team Leader is permitted to select the problem statement
+    if ((auth.user as any).isLead === false) {
+      return { 
+        success: false, 
+        message: 'Only the Team Leader is authorized to select or change the problem statement.' 
+      };
+    }
+
+    return await teamService.selectProblemStatement(teamId, problemStatementId, selectedStack, (auth.user as any).email);
   } catch (err: any) {
     console.error('Error selecting problem statement:', err);
     return { success: false, message: 'Server error' };

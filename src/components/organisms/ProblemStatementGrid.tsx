@@ -10,6 +10,7 @@ interface ProblemStatementGridProps {
   selectedPsId: string | null;
   selectingPsId: string | null;
   selectedStack: string;
+  isLead?: boolean;
   setSelectingPsId: (id: string | null) => void;
   setSelectedStack: (stack: string) => void;
   onSelectProblemStatement: (id: string) => void;
@@ -35,6 +36,7 @@ export const ProblemStatementGrid: React.FC<ProblemStatementGridProps> = ({
   selectedPsId,
   selectingPsId,
   selectedStack,
+  isLead = true,
   setSelectingPsId,
   setSelectedStack,
   onSelectProblemStatement
@@ -102,10 +104,18 @@ export const ProblemStatementGrid: React.FC<ProblemStatementGridProps> = ({
                   {ps.slotLimit > 0 && ps.slotLimit - ps.slotsFilled <= 0 ? (
                      <button
                        disabled
-                       className="w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 py-3.5 rounded-xl font-bold cursor-not-allowed"
+                       className="w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 py-3.5 rounded-xl font-bold cursor-not-allowed text-sm"
                      >
                        <Lock className="w-5 h-5 mr-2" /> Slots Over
                      </button>
+                  ) : isLead === false ? (
+                    <button
+                      disabled
+                      className="w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 py-3.5 rounded-xl font-semibold cursor-not-allowed text-xs sm:text-sm"
+                      title="Only the Team Leader can select the problem statement"
+                    >
+                      <Lock className="w-4 h-4 mr-2 text-slate-400" /> Team Leader Selection Only
+                    </button>
                   ) : selectingPsId === ps._id ? (
                     <div className="space-y-3">
                       <div>

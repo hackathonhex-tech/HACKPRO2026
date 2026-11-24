@@ -1,15 +1,67 @@
-import { getUserByUniqueIdOrEmail, getTeamByLeadEmailOrUniqueId } from '../repositories/auth.repository';
+import { getUserByUniqueIdOrEmail, findTeamForLogin } from '../repositories/auth.repository';
 import Round from '../models/Round';
 
 export async function loginTeam(identifier: string, secret: string) {
-  const team = await getTeamByLeadEmailOrUniqueId(identifier);
-  if (!team) {
-    return { success: false, message: 'Invalid credentials' };
+  const cleanId = (identifier || '').trim();
+  const cleanSecret = (secret || '').trim();
+
+  if (!cleanId || !cleanSecret) {
+    return { success: false, message: 'Please provide both your Email / Login ID and Password / Team Code.' };
   }
 
-  const isValidSecret = (team.uniqueId === secret || team.leadEmail?.toLowerCase() === secret.toLowerCase());
-  if (!isValidSecret) {
-    return { success: false, message: 'Invalid credentials' };
+  const team = await findTeamForLogin(cleanId, cleanSecret);
+  if (!team) {
+    return { success: false, message: 'Invalid credentials. No team found with the provided details.' };
+  }
+
+  const teamUniqueId = (team.uniqueId || '').toUpperCase();
+  const isCodeInId = cleanId.toUpperCase() === teamUniqueId;
+  const isCodeInSecret = cleanSecret.toUpperCase() === teamUniqueId;
+  const isLegacyLeadSecret = team.leadEmail && cleanSecret.toLowerCase() === team.leadEmail.toLowerCase();
+
+  if (!isCodeInId && !isCodeInSecret && !isLegacyLeadSecret) {
+    return { success: false, message: 'Invalid credentials. Incorrect Team Code or Password.' };
+  }
+
+  // Determine which entered value represents the user email
+  let enteredEmail = '';
+  if (isCodeInSecret && !isCodeInId) {
+    enteredEmail = cleanId;
+  } else if (isCodeInId && !isCodeInSecret) {
+    enteredEmail = cleanSecret;
+  } else if (isLegacyLeadSecret) {
+    enteredEmail = cleanId;
+  }
+
+  let isLead = false;
+  let userEmail = '';
+  let userName = '';
+
+  if (!enteredEmail) {
+    // Fallback if both inputs are the team code
+    isLead = true;
+    userEmail = team.leadEmail;
+    userName = team.leadName;
+  } else if (team.leadEmail && enteredEmail.toLowerCase() === team.leadEmail.toLowerCase()) {
+    isLead = true;
+    userEmail = team.leadEmail;
+    userName = team.leadName;
+  } else {
+    // Check if entered email matches any team member
+    const matchedMember = (team.members || []).find(
+      (m: any) => m.email && m.email.trim().toLowerCase() === enteredEmail.toLowerCase()
+    );
+
+    if (matchedMember) {
+      isLead = false;
+      userEmail = matchedMember.email.trim();
+      userName = matchedMember.name || 'Team Member';
+    } else {
+      return { 
+        success: false, 
+        message: 'Invalid credentials. The entered email is not registered with this team.' 
+      };
+    }
   }
 
   // Check if there is an active round restricting team access
@@ -25,8 +77,17 @@ export async function loginTeam(identifier: string, secret: string) {
     }
   }
 
-  const token = signToken({ id: team._id, uniqueId: team.uniqueId, role: 'team', name: team.name });
-  return { success: true, token, role: 'team' };
+  const token = signToken({ 
+    id: team._id.toString(), 
+    uniqueId: team.uniqueId, 
+    role: 'team', 
+    name: team.name,
+    email: userEmail,
+    memberName: userName,
+    isLead
+  });
+
+  return { success: true, token, role: 'team', isLead };
 }
 import bcrypt from 'bcrypt';
 import { signToken } from '@/server/middleware/auth';

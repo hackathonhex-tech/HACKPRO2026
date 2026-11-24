@@ -19,6 +19,7 @@ export default function ProblemStatementDetailPage({ params }: { params: Promise
   const [team, setTeam] = useState<any>(null);
   const [ps, setPs] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isLead, setIsLead] = useState<boolean>(true);
   const [selecting, setSelecting] = useState(false);
   const [selectedStack, setSelectedStack] = useState<string>('');
 
@@ -29,6 +30,10 @@ export default function ProblemStatementDetailPage({ params }: { params: Promise
     if (!authData.success) {
       setLoading(false);
       return;
+    }
+
+    if ((authData as any).user) {
+      setIsLead((authData as any).user.isLead !== false);
     }
     
     if ((authData as any).user?.uniqueId) {
@@ -96,6 +101,7 @@ export default function ProblemStatementDetailPage({ params }: { params: Promise
         slotsOver={slotsOver}
         selecting={selecting}
         selectedStack={selectedStack}
+        isLead={isLead}
         setSelecting={setSelecting}
         setSelectedStack={setSelectedStack}
         onSelectProblemStatement={selectProblemStatement}

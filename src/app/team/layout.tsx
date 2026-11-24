@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { Rocket, LayoutDashboard, UploadCloud, FileText, BarChart, Lock, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DashboardTemplate } from '@/components/templates/DashboardTemplate';
-import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { meAction, logoutAction } from '@/server/actions/user.actions';
 import { getTeamByUniqueIdAction } from '@/server/actions/team.actions';
 import { getActiveRoundAction } from '@/server/actions/round.actions';
@@ -19,11 +18,9 @@ const teamNav = [
 export default function TeamLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [restricted, setRestricted] = useState<{ isRestricted: boolean; teamName?: string; teamUniqueId?: string; roundName?: string }>({ isRestricted: false });
-  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     async function checkQualification() {
-      setChecking(true);
       const auth = await meAction();
       if (auth.success && (auth as any).user?.uniqueId && (auth as any).user?.role === 'team') {
         const [teamRes, roundRes] = await Promise.all([
@@ -51,7 +48,6 @@ export default function TeamLayout({ children }: { children: React.ReactNode }) 
           }
         }
       }
-      setChecking(false);
     }
 
     checkQualification();
@@ -61,14 +57,6 @@ export default function TeamLayout({ children }: { children: React.ReactNode }) 
     await logoutAction();
     router.push('/');
   };
-
-  if (checking) {
-    return (
-      <div className="min-h-screen bg-slate-900 text-white p-8">
-        <LoadingScreen variant="dashboard" />
-      </div>
-    );
-  }
 
   if (restricted.isRestricted) {
     return (
