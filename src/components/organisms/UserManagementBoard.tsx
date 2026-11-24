@@ -312,14 +312,15 @@ export function UserManagementBoard({
   ];
 
   const filteredTeams = teams.filter(team => {
+    const teamPlace = (team.place || team.collegeName || '').trim();
     const matchesSearch = 
       team.name.toLowerCase().includes(teamSearchQuery.toLowerCase()) || 
       team.uniqueId.toLowerCase().includes(teamSearchQuery.toLowerCase()) || 
       (team.leadName || '').toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
       (team.leadEmail || '').toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
-      (team.collegeName || '').toLowerCase().includes(teamSearchQuery.toLowerCase());
+      teamPlace.toLowerCase().includes(teamSearchQuery.toLowerCase());
       
-    const matchesCollege = teamCollegeFilter === '' || team.collegeName === teamCollegeFilter;
+    const matchesCollege = teamCollegeFilter === '' || teamPlace.toLowerCase() === teamCollegeFilter.toLowerCase();
     const sizeInt = parseInt(teamSizeFilter, 10);
     const matchesSize = teamSizeFilter === '' || (team.members?.length || 0) === sizeInt;
     
@@ -603,7 +604,7 @@ export function UserManagementBoard({
     const headers = [
       'Team ID',
       'Team Name',
-      'College',
+      'Place',
       'Department',
       'Problem Statement Title',
       'Problem Statement Track',
@@ -623,6 +624,7 @@ export function UserManagementBoard({
       const psTitle = t.problemStatementId?.title || 'Not Selected';
       const psTrack = t.problemStatementId?.track || 'N/A';
       const stack = t.selectedStack || 'N/A';
+      const place = t.place || t.collegeName || '';
 
       if (t.members && t.members.length > 0) {
         t.members.forEach((m: any, idx: number) => {
@@ -633,7 +635,7 @@ export function UserManagementBoard({
           rows.push([
             t.uniqueId,
             `"${(t.name || '').replace(/"/g, '""')}"`,
-            `"${(t.collegeName || '').replace(/"/g, '""')}"`,
+            `"${place.replace(/"/g, '""')}"`,
             `"${(t.department || '').replace(/"/g, '""')}"`,
             `"${(psTitle || '').replace(/"/g, '""')}"`,
             `"${(psTrack || '').replace(/"/g, '""')}"`,
@@ -651,7 +653,7 @@ export function UserManagementBoard({
         rows.push([
           t.uniqueId,
           `"${(t.name || '').replace(/"/g, '""')}"`,
-          `"${(t.collegeName || '').replace(/"/g, '""')}"`,
+          `"${place.replace(/"/g, '""')}"`,
           `"${(t.department || '').replace(/"/g, '""')}"`,
           `"${(psTitle || '').replace(/"/g, '""')}"`,
           `"${(psTrack || '').replace(/"/g, '""')}"`,
@@ -695,7 +697,7 @@ export function UserManagementBoard({
           rows.push([
             t.uniqueId,
             t.name,
-            t.collegeName || '-',
+            t.place || t.collegeName || '-',
             isLead ? 'Lead' : `Member ${idx + 1}`,
             m.name || '-',
             m.supersetId || (isLead ? (t.leadSupersetId || t.supersetId || '-') : '-'),
@@ -707,7 +709,7 @@ export function UserManagementBoard({
         rows.push([
           t.uniqueId,
           t.name,
-          t.collegeName || '-',
+          t.place || t.collegeName || '-',
           'Lead',
           t.leadName || '-',
           t.leadSupersetId || t.supersetId || '-',
@@ -719,7 +721,7 @@ export function UserManagementBoard({
 
     autoTable(doc, {
       startY: 20,
-      head: [['Team ID', 'Team Name', 'College', 'Role', 'Member Name', 'Superset ID', 'Email', 'Problem Statement']],
+      head: [['Team ID', 'Team Name', 'Place', 'Role', 'Member Name', 'Superset ID', 'Email', 'Problem Statement']],
       body: rows,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [79, 70, 229] }
@@ -877,9 +879,9 @@ export function UserManagementBoard({
                 value={teamCollegeFilter}
                 onChange={e => setTeamCollegeFilter(e.target.value)}
               >
-                <option value="">All Colleges</option>
-                {Array.from(new Set(teams.map(t => t.collegeName).filter(Boolean))).map(college => (
-                  <option key={String(college)} value={String(college)}>{college}</option>
+                <option value="">All Places</option>
+                {Array.from(new Set(teams.map(t => (t.place || t.collegeName)?.trim()).filter(Boolean))).map(place => (
+                  <option key={String(place)} value={String(place)}>{place}</option>
                 ))}
               </select>
               <Button size="sm" onClick={() => {
@@ -910,7 +912,7 @@ export function UserManagementBoard({
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Team Name</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Team ID</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Lead</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">College</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Place</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Members</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                   </tr>
@@ -957,8 +959,8 @@ export function UserManagementBoard({
                           <p className="text-sm font-medium text-slate-800 dark:text-white">{team.leadName || '—'}</p>
                           <p className="text-xs text-slate-500">{team.leadEmail || '—'}</p>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                          {team.collegeName || '—'}
+                        <td className="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">
+                          {team.place || team.collegeName || '—'}
                         </td>
                         <td className="px-6 py-4">
                           <span className="text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full">
