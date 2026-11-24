@@ -18,6 +18,7 @@ export default function UsersPage() {
   const [currentUserRole, setCurrentUserRole] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [maxTeamSize, setMaxTeamSize] = useState(4);
+  const [registrationFieldsConfig, setRegistrationFieldsConfig] = useState<any>(null);
 
   const fetchUsers = async (initial = false) => {
     if (initial) setLoading(true);
@@ -44,6 +45,9 @@ export default function UsersPage() {
     if (teamRes.success) setTeams((teamRes as any).teams);
     if (settingsData.success && (settingsData as any).settings) {
       setMaxTeamSize((settingsData as any).settings.maxTeamSize ?? 4);
+      if ((settingsData as any).settings.registrationFieldsConfig) {
+        setRegistrationFieldsConfig((settingsData as any).settings.registrationFieldsConfig);
+      }
     }
     if (initial) setLoading(false);
   };
@@ -136,6 +140,7 @@ export default function UsersPage() {
       roles={roles}
       currentUserRole={currentUserRole}
       maxTeamSize={maxTeamSize}
+      registrationFieldsConfig={registrationFieldsConfig}
       onRefresh={fetchUsers}
       onCreateJudge={handleCreateJudge}
       onDeleteJudge={handleDeleteJudge}

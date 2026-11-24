@@ -14,13 +14,19 @@ import Round from '../models/Round';
 
 export async function createTeam(body: any) {
   const uniqueId = `TM-${uuidv4().substring(0, 6).toUpperCase()}`;
-  const teamData = {
+  const teamData: any = {
+    ...body,
     name: body.name,
     leadName: body.leadName || body.name,
     leadEmail: body.leadEmail || '',
     leadPhone: body.leadPhone || '',
+    leadEmpId: body.leadEmpId || body.empId || '',
+    place: body.place || '',
+    leadSupersetId: body.leadSupersetId || body.supersetId || '',
+    supersetId: body.supersetId || body.leadSupersetId || '',
     collegeName: body.collegeName || '',
     department: body.department || '',
+    customFields: body.customFields || {},
     members: body.members || [],
     uniqueId,
     qrCodeString: uniqueId

@@ -5,12 +5,27 @@ import { useRouter } from 'next/navigation';
 import { Plus, Copy, CheckCircle, Trash2, Edit3, X, Save, Download, FileText, Eye, Users, User, Mail, Building, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { resendTeamEmailAction } from '@/server/actions/admin.team.actions';
+import { getPublicSettingsAction } from '@/server/actions/settings.actions';
+import { FormFieldConfig, RegistrationFieldsConfig } from './RegistrationFieldConfigBoard';
 import { Button } from '../atoms/Button';
 import { IconButton } from '../atoms/IconButton';
 import { Input } from '../atoms/Input';
 import { Modal } from '../molecules/Modal';
 import { Tabs } from '../molecules/Tabs';
 import { Pagination } from '../molecules/Pagination';
+
+const DEFAULT_TEAM_FIELDS: FormFieldConfig[] = [
+  { id: 'name', key: 'name', label: 'Team Name', type: 'text', placeholder: 'e.g. Code Ninjas', required: true, enabled: true, isCustom: false },
+  { id: 'collegeName', key: 'collegeName', label: 'College / Institution', type: 'text', placeholder: 'e.g. MIT Chennai', required: true, enabled: true, isCustom: false },
+  { id: 'department', key: 'department', label: 'Department', type: 'text', placeholder: 'e.g. Computer Science', required: true, enabled: true, isCustom: false }
+];
+
+const DEFAULT_MEMBER_FIELDS: FormFieldConfig[] = [
+  { id: 'name', key: 'name', label: 'Full Name', type: 'text', placeholder: 'e.g. John Doe', required: true, enabled: true, isCustom: false },
+  { id: 'supersetId', key: 'supersetId', label: 'Superset ID / Roll No', type: 'text', placeholder: 'e.g. 123456', required: true, enabled: true, isCustom: false },
+  { id: 'email', key: 'email', label: 'Email ID', type: 'email', placeholder: 'e.g. john@college.edu', required: true, enabled: true, isCustom: false },
+  { id: 'phone', key: 'phone', label: 'Phone Number', type: 'tel', placeholder: 'e.g. 9876543210', required: true, enabled: true, isCustom: false }
+];
 
 export interface UserManagementBoardProps {
   judges: any[];
@@ -32,6 +47,7 @@ export interface UserManagementBoardProps {
   onCreateRole?: (data: any) => Promise<boolean>;
   onDeleteRole?: (id: string) => Promise<boolean>;
   onEditRole?: (id: string, data: any) => Promise<boolean>;
+  registrationFieldsConfig?: RegistrationFieldsConfig;
 }
 
 export function UserManagementBoard({
@@ -53,9 +69,37 @@ export function UserManagementBoard({
   roles = [],
   onCreateRole,
   onDeleteRole,
-  onEditRole
+  onEditRole,
+  registrationFieldsConfig
 }: UserManagementBoardProps) {
   const [activeTab, setActiveTabState] = useState<'judges' | 'teams' | 'subadmins' | 'roles'>('judges');
+  const [fieldsConfig, setFieldsConfig] = useState<RegistrationFieldsConfig | null>(registrationFieldsConfig || null);
+
+  useEffect(() => {
+    if (registrationFieldsConfig) {
+      setFieldsConfig(registrationFieldsConfig);
+    } else {
+      getPublicSettingsAction().then((res: any) => {
+        if (res.success && res.settings?.registrationFieldsConfig) {
+          setFieldsConfig(res.settings.registrationFieldsConfig);
+        }
+      });
+    }
+  }, [registrationFieldsConfig]);
+
+  const activeTeamFields = useMemo(() => {
+    const list = fieldsConfig?.teamFields && fieldsConfig.teamFields.length > 0
+      ? fieldsConfig.teamFields
+      : DEFAULT_TEAM_FIELDS;
+    return list.filter(f => f.enabled !== false);
+  }, [fieldsConfig]);
+
+  const activeMemberFields = useMemo(() => {
+    const list = fieldsConfig?.memberFields && fieldsConfig.memberFields.length > 0
+      ? fieldsConfig.memberFields
+      : DEFAULT_MEMBER_FIELDS;
+    return list.filter(f => f.enabled !== false);
+  }, [fieldsConfig]);
 
   useEffect(() => {
     try {
@@ -131,17 +175,88 @@ export function UserManagementBoard({
   const [teamCollegeFilter, setTeamCollegeFilter] = useState('');
   const [teamSizeFilter, setTeamSizeFilter] = useState('');
 
-  // New Team Form
-  const [teamName, setTeamName] = useState('');
-  const [teamCollege, setTeamCollege] = useState('');
+  // New Team Form (Dynamic from Registration Setup)
+  const [teamFormData, setTeamFormData] = useState<Record<string, any>>({});
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
-  const [newTeamMembers, setNewTeamMembers] = useState<any[]>([]);
+  const [newTeamMembers, setNewTeamMembers] = useState<Record<string, any>[]>([]);
 
-  const updateMemberField = (index: number, field: string, value: string) => {
-    const updated = [...newTeamMembers];
-    updated[index][field] = value;
-    setNewTeamMembers(updated);
+  const updateTeamField = (key: string, value: any) => {
+    setTeamFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const updateMemberField = (index: number, field: string, value: any) => {
+    setNewTeamMembers(prev => {
+      const copy = [...prev];
+      if (!copy[index]) copy[index] = {};
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  // Dynamic input renderer for configured fields
+  const renderDynamicFieldInput = (
+    field: FormFieldConfig,
+    value: any,
+    onChange: (val: any) => void
+  ) => {
+    if (field.type === 'select') {
+      return (
+        <div key={field.key} className="space-y-1.5">
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            {field.label} {field.required && <span className="text-rose-500">*</span>}
+          </label>
+          <select
+            required={field.required}
+            value={value || ''}
+            onChange={e => onChange(e.target.value)}
+            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+          >
+            <option value="">{field.placeholder || `Select ${field.label}`}</option>
+            {field.options?.map((opt, idx) => (
+              <option key={idx} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+
+    if (field.type === 'textarea') {
+      return (
+        <div key={field.key} className="space-y-1.5 col-span-full">
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            {field.label} {field.required && <span className="text-rose-500">*</span>}
+          </label>
+          <textarea
+            required={field.required}
+            rows={2}
+            value={value || ''}
+            onChange={e => onChange(e.target.value)}
+            placeholder={field.placeholder || field.label}
+            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div key={field.key}>
+        <Input
+          label={field.label}
+          type={field.type}
+          required={field.required}
+          value={value || ''}
+          onChange={e => {
+            let v = e.target.value;
+            if (field.type === 'tel' || field.key === 'phone') {
+              v = v.replace(/\D/g, '').slice(0, 10);
+            }
+            onChange(v);
+          }}
+          placeholder={field.placeholder || field.label}
+        />
+      </div>
+    );
   };
 
   // Edit state
@@ -253,24 +368,84 @@ export function UserManagementBoard({
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreatingTeam(true);
+
+    const teamName = (teamFormData.name || teamFormData.team_name || teamFormData.teamName || '').trim();
+    if (!teamName) {
+      alert('Team Name is required.');
+      setIsCreatingTeam(false);
+      return;
+    }
+
+    const collegeName = (teamFormData.collegeName || teamFormData.college || '').trim();
+    const department = (teamFormData.department || '').trim();
+    const place = (teamFormData.place || teamFormData.location || '').trim();
+
+    // Extract custom fields from team form
+    const customFields: Record<string, any> = {};
+    Object.entries(teamFormData).forEach(([k, v]) => {
+      if (!['name', 'teamName', 'team_name', 'collegeName', 'college', 'department', 'place', 'location'].includes(k)) {
+        customFields[k] = v;
+      }
+    });
+
     const lead = newTeamMembers[0] || {};
+    const leadName = (lead.name || lead.emp_name || lead.leadName || '').trim();
+    const leadEmail = (lead.email || lead.email_id || lead.leadEmail || '').trim();
+    const leadPhone = (lead.phone || lead.contact || lead.leadPhone || '').trim();
+    const leadEmpId = (lead.empId || lead.Emp_id || lead.emp_id || lead.supersetId || '').trim();
+    const leadPlace = (lead.place || lead.location || place).trim();
+    const leadCollege = (lead.college || collegeName).trim();
+    const leadDept = (lead.department || department).trim();
+
+    const membersPayload = newTeamMembers.map((m) => {
+      const mName = (m.name || m.emp_name || '').trim();
+      const mEmail = (m.email || m.email_id || '').trim();
+      const mPhone = (m.phone || m.contact || '').trim();
+      const mEmpId = (m.empId || m.Emp_id || m.emp_id || m.supersetId || '').trim();
+      const mPlace = (m.place || m.location || leadPlace || place).trim();
+      const mCollege = (m.college || leadCollege || collegeName).trim();
+      const mDept = (m.department || leadDept || department).trim();
+
+      const mCustom: Record<string, any> = {};
+      Object.entries(m).forEach(([k, v]) => {
+        if (!['name', 'emp_name', 'empId', 'Emp_id', 'emp_id', 'supersetId', 'email', 'email_id', 'phone', 'contact', 'place', 'location', 'college', 'department', 'attendance'].includes(k)) {
+          mCustom[k] = v;
+        }
+      });
+
+      return {
+        ...m,
+        name: mName,
+        empId: mEmpId,
+        supersetId: mEmpId,
+        email: mEmail,
+        contact: mPhone || mEmail,
+        phone: mPhone,
+        place: mPlace,
+        college: mCollege,
+        department: mDept,
+        attendance: false,
+        customFields: mCustom
+      };
+    });
+
     const success = await onCreateTeam({
       name: teamName,
-      leadName: lead.name || '',
-      leadEmail: lead.email || '',
-      leadSupersetId: lead.supersetId || '',
-      supersetId: lead.supersetId || '',
-      collegeName: teamCollege,
-      department: lead.department || '',
-      members: newTeamMembers.map(m => ({
-        ...m,
-        attendance: false
-      }))
+      leadName: leadName || teamName,
+      leadEmail,
+      leadPhone,
+      leadEmpId,
+      leadSupersetId: leadEmpId,
+      supersetId: leadEmpId,
+      place: leadPlace || place,
+      collegeName: leadCollege || collegeName,
+      department: leadDept || department,
+      customFields,
+      members: membersPayload
     });
 
     if (success) {
-      setTeamName('');
-      setTeamCollege('');
+      setTeamFormData({});
       setNewTeamMembers([]);
       setIsTeamModalOpen(false);
       onRefresh();
@@ -316,12 +491,15 @@ export function UserManagementBoard({
     const teamToSave = { ...editingFullTeam };
     if (teamToSave.members && teamToSave.members.length > 0) {
       const lead = teamToSave.members[0];
-      teamToSave.leadName = lead.name;
-      teamToSave.leadEmail = lead.email;
-      teamToSave.leadSupersetId = lead.supersetId;
-      teamToSave.supersetId = lead.supersetId;
-      teamToSave.leadPhone = lead.phone || lead.contact;
-      teamToSave.department = lead.department;
+      teamToSave.leadName = lead.name || teamToSave.leadName;
+      teamToSave.leadEmail = lead.email || teamToSave.leadEmail;
+      const empId = lead.empId || lead.supersetId || teamToSave.leadEmpId || teamToSave.leadSupersetId || '';
+      teamToSave.leadEmpId = empId;
+      teamToSave.leadSupersetId = empId;
+      teamToSave.supersetId = empId;
+      teamToSave.leadPhone = lead.phone || lead.contact || teamToSave.leadPhone;
+      teamToSave.department = lead.department || teamToSave.department;
+      teamToSave.place = lead.place || teamToSave.place;
     }
 
     const success = await onEditTeam(teamToSave._id, teamToSave);
@@ -705,8 +883,9 @@ export function UserManagementBoard({
                 ))}
               </select>
               <Button size="sm" onClick={() => {
-                const requiredMembers = Math.max(0, maxTeamSize - 1);
-                setNewTeamMembers(Array.from({ length: requiredMembers }, () => ({ name: '', email: '', contact: '', college: '', department: '' })));
+                const defaultCount = Math.max(1, maxTeamSize || 3);
+                setTeamFormData({});
+                setNewTeamMembers(Array.from({ length: defaultCount }, () => ({})));
                 setIsTeamModalOpen(true);
               }} leftIcon={<Plus className="w-4 h-4" />}>
                 Add Team
@@ -1147,43 +1326,79 @@ export function UserManagementBoard({
       {/* Add Team Modal */}
       <Modal isOpen={isTeamModalOpen} onClose={() => setIsTeamModalOpen(false)} title="Register New Team" maxWidth="2xl">
         <form onSubmit={handleCreateTeam} className="space-y-6">
-          {/* General Team Info */}
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <Input label="Team Name" type="text" required value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="Awesome Team" />
+          {/* General Team Info (Configured in Registration Setup) */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Team Details
+              </h4>
+              <span className="text-[11px] text-slate-400 font-medium">
+                Configured via Registration Setup
+              </span>
             </div>
-            <div>
-              <Input label="College" type="text" required value={teamCollege} onChange={e => setTeamCollege(e.target.value)} placeholder="University Name" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeTeamFields.map(field => 
+                renderDynamicFieldInput(
+                  field, 
+                  teamFormData[field.key] || '', 
+                  (val) => updateTeamField(field.key, val)
+                )
+              )}
             </div>
           </div>
 
-          {/* Dynamic Members Section */}
+          {/* Dynamic Members Section (Configured in Registration Setup) */}
           <div className="pt-6 border-t border-slate-100 dark:border-slate-700">
             <div className="flex justify-between items-center mb-4">
-              <label className="block text-sm font-bold text-slate-800 dark:text-white ml-1">Team Members ({newTeamMembers.length})</label>
+              <div>
+                <label className="block text-sm font-bold text-slate-800 dark:text-white">
+                  Team Members ({newTeamMembers.length})
+                </label>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Member 1 will be designated as the Team Lead.
+                </p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setNewTeamMembers(prev => [...prev, {}])} 
+                className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg transition-colors flex items-center"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add Member
+              </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1">
               {newTeamMembers.map((member, idx) => (
                 <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 relative group">
-                  <h4 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Member {idx + 1} {idx === 0 && <span className="text-indigo-500">(Team Lead)</span>}</h4>
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Member {idx + 1} {idx === 0 && <span className="text-indigo-600 dark:text-indigo-400 font-bold ml-1">(Team Lead)</span>}
+                    </h4>
+                    {idx > 0 && (
+                      <button 
+                        type="button" 
+                        onClick={() => setNewTeamMembers(prev => prev.filter((_, i) => i !== idx))} 
+                        className="text-rose-500 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors" 
+                        title="Remove Member"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <Input type="text" required value={member.name} onChange={e => updateMemberField(idx, 'name', e.target.value)} placeholder="Name" />
-                    <Input type="text" required value={member.supersetId || ''} onChange={e => updateMemberField(idx, 'supersetId', e.target.value.replace(/\D/g, ''))} pattern="^[0-9]+$" title="Must be a number" placeholder="Superset ID *" />
-                    <Input type="email" value={member.email} onChange={e => updateMemberField(idx, 'email', e.target.value)} placeholder="Email" />
-                    <Input type="tel" value={member.phone || (member.contact && !member.contact.includes('@') ? member.contact : '') || ''} onChange={e => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      updateMemberField(idx, 'contact', val);
-                      updateMemberField(idx, 'phone', val);
-                    }} pattern="^[0-9]{10}$" title="Must be exactly 10 digits" placeholder="Phone" />
-                    <Input type="text" value={member.department} onChange={e => updateMemberField(idx, 'department', e.target.value)} placeholder="Department" />
-                    <Input type="text" value={member.college || ''} onChange={e => updateMemberField(idx, 'college', e.target.value)} placeholder="College" />
+                    {activeMemberFields.map(field => 
+                      renderDynamicFieldInput(
+                        field, 
+                        member[field.key] ?? member.customFields?.[field.key] ?? '', 
+                        (val) => updateMemberField(idx, field.key, val)
+                      )
+                    )}
                   </div>
                 </div>
               ))}
               {newTeamMembers.length === 0 && (
                 <div className="text-center py-6 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50">
-                  <p className="text-sm text-slate-500">No additional members added.</p>
+                  <p className="text-sm text-slate-500">No members added. Click &quot;Add Member&quot; above to add members.</p>
                 </div>
               )}
             </div>
@@ -1191,7 +1406,7 @@ export function UserManagementBoard({
 
           <div className="pt-4 mt-6 border-t border-slate-100 dark:border-slate-700">
             <Button type="submit" disabled={isCreatingTeam} fullWidth leftIcon={<Plus className="w-5 h-5" />}>
-              {isCreatingTeam ? 'Creating...' : 'Create Team'}
+              {isCreatingTeam ? 'Creating Team...' : 'Create Team'}
             </Button>
           </div>
         </form>
@@ -1201,21 +1416,45 @@ export function UserManagementBoard({
       <Modal isOpen={!!editingFullTeam} onClose={() => setEditingFullTeam(null)} title="Edit Team Details" maxWidth="2xl">
         {editingFullTeam && (
           <form onSubmit={saveFullTeamEdit} className="space-y-6">
-            {/* General Team Info */}
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <Input label="Team Name" type="text" required value={editingFullTeam.name} onChange={e => setEditingFullTeam({ ...editingFullTeam, name: e.target.value })} placeholder="Awesome Team" />
+            {/* General Team Info (Configured in Registration Setup) */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Team Details
+                </h4>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Configured via Registration Setup
+                </span>
               </div>
-              <div>
-                <Input label="College" type="text" value={editingFullTeam.collegeName} onChange={e => setEditingFullTeam({ ...editingFullTeam, collegeName: e.target.value })} placeholder="University Name" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {activeTeamFields.map(field => 
+                  renderDynamicFieldInput(
+                    field, 
+                    editingFullTeam[field.key] ?? editingFullTeam.customFields?.[field.key] ?? '', 
+                    (val) => setEditingFullTeam((prev: any) => ({
+                      ...prev,
+                      [field.key]: val,
+                      customFields: { ...(prev.customFields || {}), [field.key]: val }
+                    }))
+                  )
+                )}
               </div>
             </div>
 
             {/* Dynamic Members Section */}
             <div className="pt-6 border-t border-slate-100 dark:border-slate-700">
               <div className="flex justify-between items-center mb-4">
-                <label className="block text-sm font-bold text-slate-800 dark:text-white ml-1">Team Members ({(editingFullTeam.members || []).length})</label>
-                <button type="button" onClick={() => setEditingFullTeam({ ...editingFullTeam, members: [...(editingFullTeam.members || []), { name: '', email: '', supersetId: '', contact: '', department: '', college: '', attendance: false }] })} className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg transition-colors flex items-center">
+                <label className="block text-sm font-bold text-slate-800 dark:text-white ml-1">
+                  Team Members ({(editingFullTeam.members || []).length})
+                </label>
+                <button 
+                  type="button" 
+                  onClick={() => setEditingFullTeam((prev: any) => ({
+                    ...prev,
+                    members: [...(prev.members || []), { name: '', attendance: false }]
+                  }))} 
+                  className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg transition-colors flex items-center"
+                >
                   <Plus className="w-3 h-3 mr-1" /> Add Member
                 </button>
               </div>
@@ -1224,53 +1463,46 @@ export function UserManagementBoard({
                 {(editingFullTeam.members || []).map((member: any, idx: number) => (
                   <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 relative group">
                     <div className="flex justify-between items-center mb-3">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Member {idx + 1} {idx === 0 && <span className="text-indigo-500">(Team Lead)</span>}</h4>
-                      <button type="button" onClick={() => {
-                        const newMembers = [...editingFullTeam.members];
-                        newMembers.splice(idx, 1);
-                        setEditingFullTeam({ ...editingFullTeam, members: newMembers });
-                      }} className="text-red-500 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1" title="Remove Member">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                        Member {idx + 1} {idx === 0 && <span className="text-indigo-500">(Team Lead)</span>}
+                      </h4>
+                      {idx > 0 && (
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            const newMembers = [...editingFullTeam.members];
+                            newMembers.splice(idx, 1);
+                            setEditingFullTeam({ ...editingFullTeam, members: newMembers });
+                          }} 
+                          className="text-red-500 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1" 
+                          title="Remove Member"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Input type="text" required value={member.name} onChange={e => {
-                        const newMembers = [...editingFullTeam.members];
-                        newMembers[idx].name = e.target.value;
-                        setEditingFullTeam({ ...editingFullTeam, members: newMembers });
-                      }} placeholder="Name" />
-                      <Input type="text" required value={member.supersetId || ''} onChange={e => {
-                        const newMembers = [...editingFullTeam.members];
-                        newMembers[idx].supersetId = e.target.value.replace(/\D/g, '');
-                        setEditingFullTeam({ ...editingFullTeam, members: newMembers });
-                      }} pattern="^[0-9]+$" title="Must be a number" placeholder="Superset ID *" />
-                      <Input type="email" value={member.email || ''} onChange={e => {
-                        const newMembers = [...editingFullTeam.members];
-                        newMembers[idx].email = e.target.value;
-                        setEditingFullTeam({ ...editingFullTeam, members: newMembers });
-                      }} placeholder="Email" />
-                      <Input type="tel" value={member.phone || (member.contact && !member.contact.includes('@') ? member.contact : '') || ''} onChange={e => {
-                        const newMembers = [...editingFullTeam.members];
-                        newMembers[idx].contact = e.target.value.replace(/\D/g, '').slice(0, 10);
-                        newMembers[idx].phone = newMembers[idx].contact;
-                        setEditingFullTeam({ ...editingFullTeam, members: newMembers });
-                      }} pattern="^[0-9]{10}$" title="Must be exactly 10 digits" placeholder="Phone" />
-                      <Input type="text" value={member.department || ''} onChange={e => {
-                        const newMembers = [...editingFullTeam.members];
-                        newMembers[idx].department = e.target.value;
-                        setEditingFullTeam({ ...editingFullTeam, members: newMembers });
-                      }} placeholder="Department" />
-                      <Input type="text" value={member.college || ''} onChange={e => {
-                        const newMembers = [...editingFullTeam.members];
-                        newMembers[idx].college = e.target.value;
-                        setEditingFullTeam({ ...editingFullTeam, members: newMembers });
-                      }} placeholder="College" />
+                      {activeMemberFields.map(field => 
+                        renderDynamicFieldInput(
+                          field, 
+                          member[field.key] ?? member.customFields?.[field.key] ?? '', 
+                          (val) => {
+                            const newMembers = [...editingFullTeam.members];
+                            newMembers[idx] = {
+                              ...newMembers[idx],
+                              [field.key]: val,
+                              customFields: { ...(newMembers[idx].customFields || {}), [field.key]: val }
+                            };
+                            setEditingFullTeam({ ...editingFullTeam, members: newMembers });
+                          }
+                        )
+                      )}
                     </div>
                   </div>
                 ))}
                 {(!editingFullTeam.members || editingFullTeam.members.length === 0) && (
                   <div className="text-center py-6 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50">
-                    <p className="text-sm text-slate-500">No additional members added.</p>
+                    <p className="text-sm text-slate-500">No members added.</p>
                   </div>
                 )}
               </div>
