@@ -13,12 +13,15 @@ import {
   Mail, 
   MapPin, 
   UserCheck, 
-  FileText,
   BadgeAlert
 } from 'lucide-react';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
-import { parseCSV, generateSampleEmployeeCSV } from '@/server/utils/csv';
+import { 
+  parseSpreadsheetBuffer, 
+  generateSampleEmployeeCSV, 
+  generateSampleEmployeeExcel 
+} from '@/server/utils/csv';
 import { 
   parseAndValidateEmployeeCsvAction, 
   importEmployeeTeamsAction 
@@ -52,11 +55,11 @@ export function TeamImportBoard() {
     setIsParsing(true);
 
     try {
-      const text = await selectedFile.text();
-      const rows = parseCSV(text);
+      const buffer = await selectedFile.arrayBuffer();
+      const rows = parseSpreadsheetBuffer(buffer, selectedFile.name);
 
       if (rows.length === 0) {
-        setParseError('The uploaded CSV file is empty or missing headers.');
+        setParseError('The uploaded spreadsheet file is empty or missing headers.');
         setParseResult(null);
         setIsParsing(false);
         return;
@@ -66,11 +69,11 @@ export function TeamImportBoard() {
       if (res.success && res.data) {
         setParseResult(res.data);
       } else {
-        setParseError(res.message || 'Failed to process CSV file.');
+        setParseError(res.message || 'Failed to process spreadsheet file.');
         setParseResult(null);
       }
     } catch (err: any) {
-      setParseError(err.message || 'Error reading the CSV file.');
+      setParseError(err.message || 'Error reading the spreadsheet file.');
       setParseResult(null);
     } finally {
       setIsParsing(false);
@@ -84,13 +87,25 @@ export function TeamImportBoard() {
     }
   };
 
-  const handleDownloadSample = () => {
+  const handleDownloadSampleCSV = () => {
     const csvContent = generateSampleEmployeeCSV();
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', 'hackpro_employee_teams_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDownloadSampleExcel = () => {
+    const excelBuffer = generateSampleEmployeeExcel();
+    const blob = new Blob([excelBuffer as any], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'hackpro_employee_teams_template.xlsx');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -168,7 +183,7 @@ export function TeamImportBoard() {
             </h1>
           </div>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Upload employee rosters via CSV. Detect cross-team duplicate members in real-time, view conflicts in orange, and import rosters seamlessly.
+            Upload employee rosters via Excel (.xlsx, .xls) or CSV. Detect cross-team duplicate members in real-time, view conflicts in orange, and import rosters seamlessly.
           </p>
           {file && (
             <p className="mt-1">
@@ -178,14 +193,22 @@ export function TeamImportBoard() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <Button
             variant="outline"
             size="sm"
-            onClick={handleDownloadSample}
+            onClick={handleDownloadSampleExcel}
+            leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+          >
+            Sample Excel (.xlsx)
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadSampleCSV}
             leftIcon={<Download className="w-4 h-4" />}
           >
-            Sample Template CSV
+            Sample CSV (.csv)
           </Button>
           {parseResult && (
             <Button
@@ -200,7 +223,7 @@ export function TeamImportBoard() {
         </div>
       </div>
 
-      {/* CSV Upload Dropzone */}
+      {/* Spreadsheet Upload Dropzone */}
       {!parseResult && (
         <div
           onDragOver={(e) => e.preventDefault()}
@@ -221,10 +244,10 @@ export function TeamImportBoard() {
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                {isParsing ? 'Analyzing and checking for cross-team duplicates...' : 'Upload Employee Roster CSV'}
+                {isParsing ? 'Analyzing and checking for cross-team duplicates...' : 'Upload Employee Roster (Excel / CSV)'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Drag and drop your file here, or click to browse.
+                Drag and drop your Excel (.xlsx, .xls) or CSV (.csv) file here, or click to browse.
               </p>
             </div>
 
@@ -232,7 +255,7 @@ export function TeamImportBoard() {
               <label className="cursor-pointer">
                 <input
                   type="file"
-                  accept=".csv,text/csv"
+                  accept=".csv, .xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv"
                   className="hidden"
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
@@ -242,15 +265,15 @@ export function TeamImportBoard() {
                   disabled={isParsing}
                 />
                 <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-sm transition-all hover:shadow-indigo-500/25">
-                  <FileText className="w-4 h-4" />
-                  Select CSV File
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Select Excel / CSV File
                 </span>
               </label>
             </div>
 
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800/60 text-left">
               <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Expected CSV Columns:
+                Expected Spreadsheet Columns:
               </p>
               <div className="flex flex-wrap gap-1.5 font-mono text-[11px] text-slate-600 dark:text-slate-400">
                 <span className="bg-slate-100 dark:bg-slate-700/60 px-2 py-0.5 rounded">Emp_id</span>

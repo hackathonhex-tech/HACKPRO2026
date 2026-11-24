@@ -1,6 +1,7 @@
 /**
- * CSV parsing and generation utility
+ * Spreadsheet (Excel .xlsx / .xls & CSV) parsing and generation utility
  */
+import * as XLSX from 'xlsx';
 
 export function parseCSV(text: string): Record<string, string>[] {
   // Strip BOM if present
@@ -88,6 +89,32 @@ function splitCSVRow(rowStr: string): string[] {
   return values;
 }
 
+export function parseSpreadsheetBuffer(buffer: ArrayBuffer, fileName: string): Record<string, string>[] {
+  const isCsv = fileName.toLowerCase().endsWith('.csv');
+  
+  if (isCsv) {
+    const decoder = new TextDecoder('utf-8');
+    const text = decoder.decode(buffer);
+    return parseCSV(text);
+  }
+
+  // Parse using XLSX library for .xlsx and .xls
+  const workbook = XLSX.read(buffer, { type: 'array' });
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) return [];
+
+  const worksheet = workbook.Sheets[firstSheetName];
+  const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
+
+  return rawRows.map(row => {
+    const formatted: Record<string, string> = {};
+    for (const [k, v] of Object.entries(row)) {
+      formatted[k.trim()] = typeof v === 'string' ? v.trim() : (v !== null && v !== undefined ? String(v).trim() : '');
+    }
+    return formatted;
+  });
+}
+
 export function generateSampleEmployeeCSV(): string {
   const headers = ['Emp_id', 'emp_name', 'place', 'team_name', 'email_id', 'team leader mail', 'team leader name'];
   const sampleRows = [
@@ -103,4 +130,70 @@ export function generateSampleEmployeeCSV(): string {
     headers.join(','),
     ...sampleRows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(','))
   ].join('\r\n');
+}
+
+export function generateSampleEmployeeExcel(): Uint8Array {
+  const headers = ['Emp_id', 'emp_name', 'place', 'team_name', 'email_id', 'team leader mail', 'team leader name'];
+  const sampleRows = [
+    {
+      'Emp_id': 'EMP1001',
+      'emp_name': 'Aditi Sharma',
+      'place': 'Chennai',
+      'team_name': 'Alpha Innovators',
+      'email_id': 'aditi.sharma@example.com',
+      'team leader mail': 'aditi.sharma@example.com',
+      'team leader name': 'Aditi Sharma'
+    },
+    {
+      'Emp_id': 'EMP1002',
+      'emp_name': 'Rohan Verma',
+      'place': 'Chennai',
+      'team_name': 'Alpha Innovators',
+      'email_id': 'rohan.verma@example.com',
+      'team leader mail': 'aditi.sharma@example.com',
+      'team leader name': 'Aditi Sharma'
+    },
+    {
+      'Emp_id': 'EMP1003',
+      'emp_name': 'Sneha Patel',
+      'place': 'Bengaluru',
+      'team_name': 'Alpha Innovators',
+      'email_id': 'sneha.patel@example.com',
+      'team leader mail': 'aditi.sharma@example.com',
+      'team leader name': 'Aditi Sharma'
+    },
+    {
+      'Emp_id': 'EMP2001',
+      'emp_name': 'Karthik Raja',
+      'place': 'Coimbatore',
+      'team_name': 'Code Pioneers',
+      'email_id': 'karthik.raja@example.com',
+      'team leader mail': 'karthik.raja@example.com',
+      'team leader name': 'Karthik Raja'
+    },
+    {
+      'Emp_id': 'EMP2002',
+      'emp_name': 'Pooja Nair',
+      'place': 'Coimbatore',
+      'team_name': 'Code Pioneers',
+      'email_id': 'pooja.nair@example.com',
+      'team leader mail': 'karthik.raja@example.com',
+      'team leader name': 'Karthik Raja'
+    },
+    {
+      'Emp_id': 'EMP1002',
+      'emp_name': 'Rohan Verma',
+      'place': 'Chennai',
+      'team_name': 'Beta Disruptors',
+      'email_id': 'rohan.verma@example.com',
+      'team leader mail': 'vikram.singh@example.com',
+      'team leader name': 'Vikram Singh'
+    }
+  ];
+
+  const worksheet = XLSX.utils.json_to_sheet(sampleRows, { header: headers });
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Teams');
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  return new Uint8Array(buffer);
 }
