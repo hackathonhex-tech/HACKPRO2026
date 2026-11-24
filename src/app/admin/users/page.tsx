@@ -19,8 +19,8 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [maxTeamSize, setMaxTeamSize] = useState(4);
 
-  const fetchUsers = async () => {
-    setLoading(true);
+  const fetchUsers = async (initial = false) => {
+    if (initial) setLoading(true);
     const [meRes, judgeRes, teamRes, settingsData] = await Promise.all([
       getMeAction(),
       getJudgesAction(),
@@ -45,11 +45,11 @@ export default function UsersPage() {
     if (settingsData.success && (settingsData as any).settings) {
       setMaxTeamSize((settingsData as any).settings.maxTeamSize ?? 4);
     }
-    setLoading(false);
+    if (initial) setLoading(false);
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(true);
   }, []);
 
   const handleCreateJudge = async (data: any) => {
@@ -64,6 +64,9 @@ export default function UsersPage() {
 
   const handleDeleteJudge = async (id: string) => {
     const res = await deleteJudgeAction(id);
+    if (res.success) {
+      setJudges(prev => prev.filter(j => j._id !== id));
+    }
     return res.success;
   };
 
@@ -74,6 +77,9 @@ export default function UsersPage() {
 
   const handleDeleteTeam = async (id: string) => {
     const res = await deleteTeamAction(id);
+    if (res.success) {
+      setTeams(prev => prev.filter(t => t._id !== id));
+    }
     return res.success;
   };
 
@@ -94,6 +100,9 @@ export default function UsersPage() {
 
   const handleDeleteSubAdmin = async (id: string) => {
     const res = await deleteSubAdminAction(id);
+    if (res.success) {
+      setSubAdmins(prev => prev.filter(s => s._id !== id));
+    }
     return res.success;
   };
 
@@ -109,6 +118,9 @@ export default function UsersPage() {
 
   const handleDeleteRole = async (id: string) => {
     const res = await deleteRoleAction(id);
+    if (res.success) {
+      setRoles(prev => prev.filter(r => r._id !== id));
+    }
     return res.success;
   };
 

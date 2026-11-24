@@ -59,7 +59,7 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = ({
                              : 'bg-[#3760F8]';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col font-sans transition-colors duration-300">
+    <div className="h-screen bg-slate-50 dark:bg-slate-900 flex flex-col font-sans transition-colors duration-300 overflow-hidden">
       {/* Mobile Top Bar */}
       <div className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between z-20">
         <div className="flex items-center min-w-0 space-x-2.5">
@@ -175,16 +175,16 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = ({
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-        {/* Desktop Sidebar */}
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden h-full min-h-0">
+        {/* Desktop Sidebar - Fixed & non-scrolling with page */}
         <motion.aside 
           initial={{ x: -250, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-          className="hidden md:flex w-72 bg-white dark:bg-slate-800 shadow-xl dark:shadow-slate-900/50 flex-shrink-0 flex-col z-20 border-r border-slate-200 dark:border-slate-700/50"
+          className="hidden md:flex w-72 bg-white dark:bg-slate-800 shadow-xl dark:shadow-slate-900/50 flex-shrink-0 flex-col z-20 border-r border-slate-200 dark:border-slate-700/50 h-full sticky top-0 overflow-hidden"
         >
           {/* Sidebar Brand Header aligned with Image 2 */}
-          <div className="p-6 pb-5 border-b border-slate-100 dark:border-slate-700/50">
+          <div className="p-6 pb-5 border-b border-slate-100 dark:border-slate-700/50 flex-shrink-0">
             <Link href="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
               <BrandLogo size="md" />
             </Link>
@@ -222,7 +222,7 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = ({
             })}
           </nav>
 
-          <div className="p-4 border-t border-slate-100 dark:border-slate-700/50 space-y-3">
+          <div className="p-4 border-t border-slate-100 dark:border-slate-700/50 space-y-3 flex-shrink-0">
             <div className="flex justify-center">
               <ThemeToggle />
             </div>
@@ -236,8 +236,8 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = ({
           </div>
         </motion.aside>
 
-        {/* Main Content Area */}
-        <main className="flex-1 p-6 sm:p-8 md:p-10 overflow-auto relative">
+        {/* Main Content Area - Independently scrollable */}
+        <main className="flex-1 p-6 sm:p-8 md:p-10 overflow-y-auto relative h-full">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}

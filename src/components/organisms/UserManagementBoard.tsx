@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Copy, CheckCircle, Trash2, Edit3, X, Save, Download, FileText, Eye, Users, User, Mail, Building, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -55,7 +55,23 @@ export function UserManagementBoard({
   onDeleteRole,
   onEditRole
 }: UserManagementBoardProps) {
-  const [activeTab, setActiveTab] = useState<'judges' | 'teams' | 'subadmins' | 'roles'>('judges');
+  const [activeTab, setActiveTabState] = useState<'judges' | 'teams' | 'subadmins' | 'roles'>('judges');
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('admin_user_mgmt_tab') as any;
+      if (saved && ['judges', 'teams', 'subadmins', 'roles'].includes(saved)) {
+        setActiveTabState(saved);
+      }
+    } catch {}
+  }, []);
+
+  const setActiveTab = (tab: 'judges' | 'teams' | 'subadmins' | 'roles') => {
+    setActiveTabState(tab);
+    try {
+      localStorage.setItem('admin_user_mgmt_tab', tab);
+    } catch {}
+  };
   const router = useRouter();
 
   // Cross-team duplicate member detection strictly by Emp_id
@@ -287,7 +303,10 @@ export function UserManagementBoard({
   const deleteTeam = async (id: string) => {
     if (!confirm('Are you sure you want to delete this team?')) return;
     const success = await onDeleteTeam(id);
-    if (success) onRefresh();
+    if (success) {
+      setActiveTab('teams');
+      onRefresh();
+    }
   };
 
   const saveFullTeamEdit = async (e: React.FormEvent) => {
