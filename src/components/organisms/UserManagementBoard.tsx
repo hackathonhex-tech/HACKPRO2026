@@ -43,7 +43,7 @@ export interface UserManagementBoardProps {
   onEditTeam: (id: string, data: any) => Promise<boolean>;
   subAdmins?: any[];
   currentUserRole?: string;
-  onCreateSubAdmin?: (data: any) => Promise<boolean>;
+  onCreateSubAdmin?: (data: any) => Promise<any>;
   onDeleteSubAdmin?: (id: string) => Promise<boolean>;
   onEditSubAdmin?: (id: string, data: any) => Promise<boolean>;
   roles?: any[];
@@ -597,13 +597,14 @@ export function UserManagementBoard({
     e.preventDefault();
     if (!onCreateSubAdmin) return;
     setIsCreatingSubAdmin(true);
-    const success = await onCreateSubAdmin({
+    const res = await onCreateSubAdmin({
       name: subAdminName,
       email: subAdminEmail,
       password: subAdminPassword,
       customRoleId: subAdminRoleId
     });
-    if (success) {
+    const isSuccess = typeof res === 'boolean' ? res : res?.success;
+    if (isSuccess) {
       setSubAdminName('');
       setSubAdminEmail('');
       setSubAdminPassword('');
@@ -611,7 +612,8 @@ export function UserManagementBoard({
       setIsSubAdminModalOpen(false);
       onRefresh();
     } else {
-      alert('Failed to create sub-admin.');
+      const errorMsg = (typeof res === 'object' && res?.message) ? res.message : 'Failed to create sub-admin.';
+      alert(errorMsg);
     }
     setIsCreatingSubAdmin(false);
   };

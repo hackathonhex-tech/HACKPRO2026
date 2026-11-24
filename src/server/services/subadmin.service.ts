@@ -12,17 +12,24 @@ export async function getSubAdmins() {
 export async function createSubAdmin(body: any) {
   await connectToDatabase();
   
-  const existingUser = await User.findOne({ $or: [{ email: body.email }, { uniqueId: body.uniqueId || body.email }] });
+  const cleanEmail = (body.email || '').trim().toLowerCase();
+  const existingUser = await User.findOne({ 
+    $or: [
+      { email: cleanEmail }, 
+      { uniqueId: cleanEmail },
+      { email: new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    ] 
+  });
   if (existingUser) {
-    throw new Error('User with this email or unique ID already exists');
+    throw new Error(`A user with the email "${body.email}" already exists (as a ${existingUser.role || 'user'}).`);
   }
 
   const hashedPassword = await bcrypt.hash(body.password, 10);
   
   const newSubAdmin = new User({
-    name: body.name,
-    email: body.email,
-    uniqueId: body.uniqueId || body.email,
+    name: body.name ? body.name.trim() : 'Sub-Admin',
+    email: cleanEmail,
+    uniqueId: cleanEmail,
     password: hashedPassword,
     role: 'sub-admin',
     customRoleId: body.customRoleId || null

@@ -102,7 +102,7 @@ export default function UsersPage() {
 
   const handleCreateSubAdmin = async (data: any) => {
     const res = await createSubAdminAction(data);
-    return res.success;
+    return res;
   };
 
   const handleEditSubAdmin = async (id: string, data: any) => {
