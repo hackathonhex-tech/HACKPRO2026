@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { UserManagementBoard } from '@/components/organisms/UserManagementBoard';
 import { LoadingScreen } from '@/components/molecules/LoadingScreen';
 import { getJudgesAction, createJudgeAction, updateJudgeAction, deleteJudgeAction } from '@/server/actions/judge.actions';
-import { getTeamsAction, createTeamAction, updateTeamAction, deleteTeamAction } from '@/server/actions/admin.team.actions';
+import { getPaginatedTeamsAction, createTeamAction, updateTeamAction, deleteTeamAction } from '@/server/actions/admin.team.actions';
 import { getPublicSettingsAction } from '@/server/actions/settings.actions';
 import { getMeAction } from '@/server/actions/auth.actions';
 import { getSubAdminsAction, createSubAdminAction, updateSubAdminAction, deleteSubAdminAction } from '@/server/actions/subadmin.actions';
@@ -13,6 +13,9 @@ import { getRolesAction, createRoleAction, updateRoleAction, deleteRoleAction } 
 export default function UsersPage() {
   const [judges, setJudges] = useState<any[]>([]);
   const [teams, setTeams] = useState<any[]>([]);
+  const [totalTeams, setTotalTeams] = useState<number>(0);
+  const [distinctPlaces, setDistinctPlaces] = useState<string[]>([]);
+  const [conflictingTeamNames, setConflictingTeamNames] = useState<string[]>([]);
   const [subAdmins, setSubAdmins] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<string>('');
@@ -25,7 +28,7 @@ export default function UsersPage() {
     const [meRes, judgeRes, teamRes, settingsData] = await Promise.all([
       getMeAction(),
       getJudgesAction(),
-      getTeamsAction(),
+      getPaginatedTeamsAction({ page: 1, limit: 10 }),
       getPublicSettingsAction()
     ]);
 
@@ -42,7 +45,12 @@ export default function UsersPage() {
     }
 
     if (judgeRes.success) setJudges((judgeRes as any).judges);
-    if (teamRes.success) setTeams((teamRes as any).teams);
+    if (teamRes.success) {
+      setTeams((teamRes as any).teams || []);
+      setTotalTeams((teamRes as any).total || 0);
+      setDistinctPlaces((teamRes as any).distinctPlaces || []);
+      setConflictingTeamNames((teamRes as any).conflictingTeamNames || []);
+    }
     if (settingsData.success && (settingsData as any).settings) {
       setMaxTeamSize((settingsData as any).settings.maxTeamSize ?? 4);
       if ((settingsData as any).settings.registrationFieldsConfig) {
@@ -136,6 +144,9 @@ export default function UsersPage() {
     <UserManagementBoard 
       judges={judges}
       teams={teams}
+      initialTeamsTotal={totalTeams}
+      initialDistinctPlaces={distinctPlaces}
+      initialConflictingTeamNames={conflictingTeamNames}
       subAdmins={subAdmins}
       roles={roles}
       currentUserRole={currentUserRole}

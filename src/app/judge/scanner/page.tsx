@@ -61,7 +61,12 @@ export default function JudgeScannerPage() {
       
       const updatedMembers = [...teamInfo.members];
       updatedMembers[memberIndex].attendance = newStatus;
-      setTeamInfo({ ...teamInfo, members: updatedMembers });
+      const anyPresent = updatedMembers.some((m: any) => m.attendance === true);
+      setTeamInfo({ 
+        ...teamInfo, 
+        members: updatedMembers,
+        attendance: anyPresent || Boolean(teamInfo.attendance)
+      });
       
       setMessage({ text: `Marked ${updatedMembers[memberIndex].name} as ${newStatus ? 'Present' : 'Absent'}`, type: 'success' });
       setTimeout(() => setMessage(null), 2000);

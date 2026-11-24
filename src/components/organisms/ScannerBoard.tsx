@@ -295,14 +295,9 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
     onReset();
   }, [stopScanner, onReset]);
 
-  useEffect(() => {
-    if (teamInfo && teamInfo.attendance) {
-      const timer = setTimeout(() => {
-        resetScanner();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [teamInfo, resetScanner]);
+  const presentCount = teamInfo?.members?.filter((m: any) => m.attendance).length || 0;
+  const totalMembers = teamInfo?.members?.length || 0;
+  const isAlreadyScanned = Boolean(teamInfo?.attendance || presentCount > 0);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto pb-10 pt-4">
@@ -416,17 +411,47 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
               <p className="text-indigo-600 dark:text-indigo-400 font-mono font-bold bg-indigo-50 dark:bg-indigo-500/10 inline-block px-4 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-500/20">{teamInfo.uniqueId}</p>
             </div>
             
-            {teamInfo.attendance && (
-              <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl p-6 mb-8 text-center flex flex-col items-center">
-                <Check className="w-12 h-12 text-emerald-500 mb-3" />
-                <h4 className="text-xl font-bold text-emerald-700 dark:text-emerald-400">Team Already Scanned!</h4>
-                <p className="text-emerald-600/80 dark:text-emerald-500/80 text-sm mt-1 mb-4">Automatically scanning next team in 2 seconds...</p>
+            {isAlreadyScanned && (
+              <div className={`border rounded-2xl p-6 mb-8 text-center flex flex-col items-center ${
+                presentCount === totalMembers && totalMembers > 0
+                  ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20'
+                  : 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20'
+              }`}>
+                <Check className={`w-10 h-10 mb-2 ${
+                  presentCount === totalMembers && totalMembers > 0
+                    ? 'text-emerald-500'
+                    : 'text-amber-500'
+                }`} />
+                <h4 className={`text-xl font-bold ${
+                  presentCount === totalMembers && totalMembers > 0
+                    ? 'text-emerald-700 dark:text-emerald-400'
+                    : 'text-amber-700 dark:text-amber-400'
+                }`}>
+                  {presentCount === totalMembers && totalMembers > 0
+                    ? `Team Already Scanned — All ${totalMembers} Present`
+                    : `Team Already Scanned — Partial Attendance (${presentCount} of ${totalMembers} Present)`}
+                </h4>
+                <p className={`text-sm mt-1.5 max-w-md ${
+                  presentCount === totalMembers && totalMembers > 0
+                    ? 'text-emerald-600/80 dark:text-emerald-400/80'
+                    : 'text-amber-700/80 dark:text-amber-400/80'
+                }`}>
+                  {presentCount === totalMembers && totalMembers > 0
+                    ? 'All members have been marked present. You can adjust member attendance below if needed, or scan the next ticket.'
+                    : 'This team was previously checked in. You can mark present for any newly arrived members below, then click "Done / Scan Next".'}
+                </p>
               </div>
             )}
 
-
-            <div className="mb-10">
-              <h4 className="font-bold text-slate-400 uppercase tracking-wider text-xs mb-4 text-center">All Members (Including Lead)</h4>
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-xs">
+                  Team Members ({presentCount} / {totalMembers} Present)
+                </h4>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                  Tap to toggle attendance
+                </span>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {teamInfo.members.map((m: any, i: number) => {
                   const isLead = m.email === teamInfo.leadEmail;
@@ -455,32 +480,28 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
               </div>
             </div>
 
-            {!teamInfo.attendance && (
-              <>
-                <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    onClick={async () => {
-                      if (onToggleTeamAttendance) {
-                        await onToggleTeamAttendance(false);
-                        resetScanner();
-                      }
-                    }}
-                    disabled={loading}
-                    leftIcon={<Check className="w-5 h-5" />}
-                  >
-                    Submit & Scan Next
-                  </Button>
-                </div>
-                
-                <div className="mt-8 text-center">
-                  <Button variant="ghost" onClick={resetScanner} leftIcon={<RefreshCw className="w-4 h-4" />}>
-                    Cancel / Scan Another Ticket
-                  </Button>
-                </div>
-              </>
-            )}
+            <div className="flex flex-col sm:flex-row gap-4 mt-6">
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={async () => {
+                  if (onToggleTeamAttendance && !teamInfo.attendance) {
+                    await onToggleTeamAttendance(false);
+                  }
+                  resetScanner();
+                }}
+                disabled={loading}
+                leftIcon={<Check className="w-5 h-5" />}
+              >
+                {teamInfo.attendance ? 'Done / Scan Next Ticket' : 'Submit & Scan Next'}
+              </Button>
+            </div>
+            
+            <div className="mt-4 text-center">
+              <Button variant="ghost" onClick={resetScanner} leftIcon={<RefreshCw className="w-4 h-4" />}>
+                Scan Another Ticket
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

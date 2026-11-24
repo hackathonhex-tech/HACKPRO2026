@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Copy, CheckCircle, Trash2, Edit3, X, Save, Download, FileText, Eye, Users, User, Mail, Building, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { resendTeamEmailAction } from '@/server/actions/admin.team.actions';
+import { resendTeamEmailAction, getPaginatedTeamsAction, getAllFilteredTeamsAction } from '@/server/actions/admin.team.actions';
 import { getPublicSettingsAction } from '@/server/actions/settings.actions';
 import { FormFieldConfig, RegistrationFieldsConfig } from './RegistrationFieldConfigBoard';
 import { Button } from '../atoms/Button';
@@ -30,6 +30,9 @@ const DEFAULT_MEMBER_FIELDS: FormFieldConfig[] = [
 export interface UserManagementBoardProps {
   judges: any[];
   teams: any[];
+  initialTeamsTotal?: number;
+  initialDistinctPlaces?: string[];
+  initialConflictingTeamNames?: string[];
   maxTeamSize: number;
   onRefresh: () => void;
   onCreateJudge: (data: any) => Promise<any>;
@@ -53,6 +56,9 @@ export interface UserManagementBoardProps {
 export function UserManagementBoard({
   judges,
   teams,
+  initialTeamsTotal,
+  initialDistinctPlaces,
+  initialConflictingTeamNames,
   maxTeamSize,
   onRefresh,
   onCreateJudge,
@@ -118,11 +124,36 @@ export function UserManagementBoard({
   };
   const router = useRouter();
 
+  // Server-side team pagination & filter states
+  const [currentTeams, setCurrentTeams] = useState<any[]>(teams);
+  const [totalTeamsCount, setTotalTeamsCount] = useState<number>(initialTeamsTotal ?? teams.length);
+  const [distinctPlacesList, setDistinctPlacesList] = useState<string[]>(initialDistinctPlaces ?? []);
+  const [conflictTeamNamesList, setConflictTeamNamesList] = useState<string[]>(initialConflictingTeamNames ?? []);
+  const [isTeamsLoading, setIsTeamsLoading] = useState(false);
+  const [isExportingCSV, setIsExportingCSV] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  useEffect(() => {
+    setCurrentTeams(teams);
+  }, [teams]);
+
+  useEffect(() => {
+    if (initialTeamsTotal !== undefined) setTotalTeamsCount(initialTeamsTotal);
+  }, [initialTeamsTotal]);
+
+  useEffect(() => {
+    if (initialDistinctPlaces) setDistinctPlacesList(initialDistinctPlaces);
+  }, [initialDistinctPlaces]);
+
+  useEffect(() => {
+    if (initialConflictingTeamNames) setConflictTeamNamesList(initialConflictingTeamNames);
+  }, [initialConflictingTeamNames]);
+
   // Cross-team duplicate member detection strictly by Emp_id
   const { teamConflictMap, memberConflictMap } = useMemo(() => {
     const empIdMap = new Map<string, string[]>();
 
-    teams.forEach(team => {
+    currentTeams.forEach(team => {
       const tName = team.name || 'Unnamed Team';
       // Lead checks
       const leadEmp = (team.leadEmpId || team.leadSupersetId || team.supersetId || team.members?.[0]?.empId || team.members?.[0]?.supersetId || '').trim().toLowerCase();
@@ -158,8 +189,15 @@ export function UserManagementBoard({
       }
     });
 
+    // Also include global conflicting team names detected across the entire database
+    conflictTeamNamesList.forEach(tName => {
+      if (!teamConflictMap.has(tName)) {
+        teamConflictMap.set(tName, { count: 1, otherTeams: ['Another registered team'] });
+      }
+    });
+
     return { teamConflictMap, memberConflictMap };
-  }, [teams]);
+  }, [currentTeams, conflictTeamNamesList]);
 
   // New Judge Form
   const [judgeName, setJudgeName] = useState('');
@@ -311,22 +349,6 @@ export function UserManagementBoard({
     { id: 'leaderboard', label: 'Leaderboard' }
   ];
 
-  const filteredTeams = teams.filter(team => {
-    const teamPlace = (team.place || team.collegeName || '').trim();
-    const matchesSearch = 
-      team.name.toLowerCase().includes(teamSearchQuery.toLowerCase()) || 
-      team.uniqueId.toLowerCase().includes(teamSearchQuery.toLowerCase()) || 
-      (team.leadName || '').toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
-      (team.leadEmail || '').toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
-      teamPlace.toLowerCase().includes(teamSearchQuery.toLowerCase());
-      
-    const matchesCollege = teamCollegeFilter === '' || teamPlace.toLowerCase() === teamCollegeFilter.toLowerCase();
-    const sizeInt = parseInt(teamSizeFilter, 10);
-    const matchesSize = teamSizeFilter === '' || (team.members?.length || 0) === sizeInt;
-    
-    return matchesSearch && matchesCollege && matchesSize;
-  });
-
   // Pagination states
   const [judgePage, setJudgePage] = useState(1);
   const [judgePageSize, setJudgePageSize] = useState(10);
@@ -338,9 +360,65 @@ export function UserManagementBoard({
   const [rolePageSize, setRolePageSize] = useState(10);
 
   const paginatedJudges = judges.slice((judgePage - 1) * judgePageSize, judgePage * judgePageSize);
-  const paginatedTeams = filteredTeams.slice((teamPage - 1) * teamPageSize, teamPage * teamPageSize);
   const paginatedSubAdmins = subAdmins.slice((subAdminPage - 1) * subAdminPageSize, subAdminPage * subAdminPageSize);
   const paginatedRoles = roles.slice((rolePage - 1) * rolePageSize, rolePage * rolePageSize);
+
+  const fetchPaginatedTeams = async (
+    page: number,
+    limit: number,
+    search: string,
+    place: string,
+    size: string
+  ) => {
+    setIsTeamsLoading(true);
+    try {
+      const res = await getPaginatedTeamsAction({
+        page,
+        limit,
+        search,
+        place,
+        size
+      });
+      if (res.success) {
+        setCurrentTeams(res.teams || []);
+        setTotalTeamsCount(res.total || 0);
+        if (res.distinctPlaces) setDistinctPlacesList(res.distinctPlaces);
+        if (res.conflictingTeamNames) setConflictTeamNamesList(res.conflictingTeamNames);
+      }
+    } catch (err) {
+      console.error('Failed to load paginated teams:', err);
+    } finally {
+      setIsTeamsLoading(false);
+    }
+  };
+
+  const isFirstTeamRender = useRef(true);
+  useEffect(() => {
+    if (isFirstTeamRender.current) {
+      isFirstTeamRender.current = false;
+      return;
+    }
+    const handler = setTimeout(() => {
+      fetchPaginatedTeams(teamPage, teamPageSize, teamSearchQuery, teamCollegeFilter, teamSizeFilter);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [teamPage, teamPageSize, teamSearchQuery, teamCollegeFilter, teamSizeFilter]);
+
+  const handleSearchChange = (val: string) => {
+    setTeamSearchQuery(val);
+    setTeamPage(1);
+  };
+
+  const handlePlaceChange = (val: string) => {
+    setTeamCollegeFilter(val);
+    setTeamPage(1);
+  };
+
+  const handleSizeChange = (val: string) => {
+    setTeamSizeFilter(val);
+    setTeamPage(1);
+  };
 
   const handleCreateJudge = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -450,6 +528,7 @@ export function UserManagementBoard({
       setNewTeamMembers([]);
       setIsTeamModalOpen(false);
       onRefresh();
+      fetchPaginatedTeams(teamPage, teamPageSize, teamSearchQuery, teamCollegeFilter, teamSizeFilter);
     } else {
       alert('Failed to create team.');
     }
@@ -482,6 +561,7 @@ export function UserManagementBoard({
     if (success) {
       setActiveTab('teams');
       onRefresh();
+      fetchPaginatedTeams(teamPage, teamPageSize, teamSearchQuery, teamCollegeFilter, teamSizeFilter);
     }
   };
 
@@ -507,6 +587,7 @@ export function UserManagementBoard({
     if (success) {
       setEditingFullTeam(null);
       onRefresh();
+      fetchPaginatedTeams(teamPage, teamPageSize, teamSearchQuery, teamCollegeFilter, teamSizeFilter);
     } else {
       alert('Failed to update team.');
     }
@@ -600,38 +681,65 @@ export function UserManagementBoard({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const exportTeamsCSV = () => {
-    const headers = [
-      'Team ID',
-      'Team Name',
-      'Place',
-      'Department',
-      'Problem Statement Title',
-      'Problem Statement Track',
-      'Selected Stack',
-      'Member Role',
-      'Member Name',
-      'Superset ID',
-      'Email',
-      'Phone',
-      'Member Dept',
-      'Attendance'
-    ];
+  const exportTeamsCSV = async () => {
+    setIsExportingCSV(true);
+    try {
+      const res = await getAllFilteredTeamsAction({
+        search: teamSearchQuery,
+        place: teamCollegeFilter,
+        size: teamSizeFilter
+      });
+      const exportList: any[] = (res.success && res.teams) ? res.teams : currentTeams;
 
-    const rows: string[] = [];
+      const headers = [
+        'Team ID',
+        'Team Name',
+        'Place',
+        'Department',
+        'Problem Statement Title',
+        'Problem Statement Track',
+        'Selected Stack',
+        'Member Role',
+        'Member Name',
+        'Superset ID',
+        'Email',
+        'Phone',
+        'Member Dept',
+        'Attendance'
+      ];
 
-    teams.forEach(t => {
-      const psTitle = t.problemStatementId?.title || 'Not Selected';
-      const psTrack = t.problemStatementId?.track || 'N/A';
-      const stack = t.selectedStack || 'N/A';
-      const place = t.place || t.collegeName || '';
+      const rows: string[] = [];
 
-      if (t.members && t.members.length > 0) {
-        t.members.forEach((m: any, idx: number) => {
-          const isLead = (m.email && m.email === t.leadEmail) || (m.name === t.leadName && idx === 0);
-          const role = isLead ? 'Team Lead' : `Member ${idx + 1}`;
-          const supersetId = m.supersetId || (isLead ? (t.leadSupersetId || t.supersetId || '') : '');
-          
+      exportList.forEach(t => {
+        const psTitle = t.problemStatementId?.title || 'Not Selected';
+        const psTrack = t.problemStatementId?.track || 'N/A';
+        const stack = t.selectedStack || 'N/A';
+        const place = t.place || t.collegeName || '';
+
+        if (t.members && t.members.length > 0) {
+          t.members.forEach((m: any, idx: number) => {
+            const isLead = (m.email && m.email === t.leadEmail) || (m.name === t.leadName && idx === 0);
+            const role = isLead ? 'Team Lead' : `Member ${idx + 1}`;
+            const supersetId = m.supersetId || (isLead ? (t.leadSupersetId || t.supersetId || '') : '');
+            
+            rows.push([
+              t.uniqueId,
+              `"${(t.name || '').replace(/"/g, '""')}"`,
+              `"${place.replace(/"/g, '""')}"`,
+              `"${(t.department || '').replace(/"/g, '""')}"`,
+              `"${(psTitle || '').replace(/"/g, '""')}"`,
+              `"${(psTrack || '').replace(/"/g, '""')}"`,
+              `"${(stack || '').replace(/"/g, '""')}"`,
+              `"${role}"`,
+              `"${(m.name || '').replace(/"/g, '""')}"`,
+              `"${(supersetId || '').replace(/"/g, '""')}"`,
+              `"${(m.email || '').replace(/"/g, '""')}"`,
+              `"${(m.phone || m.contact || '').replace(/"/g, '""')}"`,
+              `"${(m.department || t.department || '').replace(/"/g, '""')}"`,
+              m.attendance ? 'Present' : 'Absent'
+            ].join(','));
+          });
+        } else {
           rows.push([
             t.uniqueId,
             `"${(t.name || '').replace(/"/g, '""')}"`,
@@ -640,93 +748,96 @@ export function UserManagementBoard({
             `"${(psTitle || '').replace(/"/g, '""')}"`,
             `"${(psTrack || '').replace(/"/g, '""')}"`,
             `"${(stack || '').replace(/"/g, '""')}"`,
-            `"${role}"`,
-            `"${(m.name || '').replace(/"/g, '""')}"`,
-            `"${(supersetId || '').replace(/"/g, '""')}"`,
-            `"${(m.email || '').replace(/"/g, '""')}"`,
-            `"${(m.phone || m.contact || '').replace(/"/g, '""')}"`,
-            `"${(m.department || t.department || '').replace(/"/g, '""')}"`,
-            m.attendance ? 'Present' : 'Absent'
+            '"Team Lead"',
+            `"${(t.leadName || '').replace(/"/g, '""')}"`,
+            `"${(t.leadSupersetId || t.supersetId || '').replace(/"/g, '""')}"`,
+            `"${(t.leadEmail || '').replace(/"/g, '""')}"`,
+            `"${(t.leadPhone || '').replace(/"/g, '""')}"`,
+            `"${(t.department || '').replace(/"/g, '""')}"`,
+            t.attendance ? 'Present' : 'Absent'
           ].join(','));
-        });
-      } else {
-        rows.push([
-          t.uniqueId,
-          `"${(t.name || '').replace(/"/g, '""')}"`,
-          `"${place.replace(/"/g, '""')}"`,
-          `"${(t.department || '').replace(/"/g, '""')}"`,
-          `"${(psTitle || '').replace(/"/g, '""')}"`,
-          `"${(psTrack || '').replace(/"/g, '""')}"`,
-          `"${(stack || '').replace(/"/g, '""')}"`,
-          '"Team Lead"',
-          `"${(t.leadName || '').replace(/"/g, '""')}"`,
-          `"${(t.leadSupersetId || t.supersetId || '').replace(/"/g, '""')}"`,
-          `"${(t.leadEmail || '').replace(/"/g, '""')}"`,
-          `"${(t.leadPhone || '').replace(/"/g, '""')}"`,
-          `"${(t.department || '').replace(/"/g, '""')}"`,
-          t.attendance ? 'Present' : 'Absent'
-        ].join(','));
-      }
-    });
+        }
+      });
 
-    const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'hackathon_teams_members.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'hackathon_teams_members.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Export CSV error:', err);
+      alert('Failed to export CSV');
+    } finally {
+      setIsExportingCSV(false);
+    }
   };
 
   const exportTeamsPDF = async () => {
-    const jsPDF = (await import('jspdf')).default;
-    const autoTable = (await import('jspdf-autotable')).default;
+    setIsExportingPDF(true);
+    try {
+      const res = await getAllFilteredTeamsAction({
+        search: teamSearchQuery,
+        place: teamCollegeFilter,
+        size: teamSizeFilter
+      });
+      const exportList: any[] = (res.success && res.teams) ? res.teams : currentTeams;
 
-    const doc = new jsPDF('landscape');
-    doc.setFontSize(14);
-    doc.text("Hackathon Teams & Member Superset Details", 14, 15);
-    
-    const rows: any[] = [];
-    teams.forEach(t => {
-      const psTitle = t.problemStatementId ? `${t.problemStatementId.title} (${t.problemStatementId.track || 'Track N/A'})` : 'Not Selected';
-      if (t.members && t.members.length > 0) {
-        t.members.forEach((m: any, idx: number) => {
-          const isLead = (m.email && m.email === t.leadEmail) || (m.name === t.leadName && idx === 0);
+      const jsPDF = (await import('jspdf')).default;
+      const autoTable = (await import('jspdf-autotable')).default;
+
+      const doc = new jsPDF('landscape');
+      doc.setFontSize(14);
+      doc.text("Hackathon Teams & Member Superset Details", 14, 15);
+      
+      const rows: any[] = [];
+      exportList.forEach(t => {
+        const psTitle = t.problemStatementId ? `${t.problemStatementId.title} (${t.problemStatementId.track || 'Track N/A'})` : 'Not Selected';
+        if (t.members && t.members.length > 0) {
+          t.members.forEach((m: any, idx: number) => {
+            const isLead = (m.email && m.email === t.leadEmail) || (m.name === t.leadName && idx === 0);
+            rows.push([
+              t.uniqueId,
+              t.name,
+              t.place || t.collegeName || '-',
+              isLead ? 'Lead' : `Member ${idx + 1}`,
+              m.name || '-',
+              m.supersetId || (isLead ? (t.leadSupersetId || t.supersetId || '-') : '-'),
+              m.email || m.contact || '-',
+              psTitle
+            ]);
+          });
+        } else {
           rows.push([
             t.uniqueId,
             t.name,
             t.place || t.collegeName || '-',
-            isLead ? 'Lead' : `Member ${idx + 1}`,
-            m.name || '-',
-            m.supersetId || (isLead ? (t.leadSupersetId || t.supersetId || '-') : '-'),
-            m.email || m.contact || '-',
+            'Lead',
+            t.leadName || '-',
+            t.leadSupersetId || t.supersetId || '-',
+            t.leadEmail || '-',
             psTitle
           ]);
-        });
-      } else {
-        rows.push([
-          t.uniqueId,
-          t.name,
-          t.place || t.collegeName || '-',
-          'Lead',
-          t.leadName || '-',
-          t.leadSupersetId || t.supersetId || '-',
-          t.leadEmail || '-',
-          psTitle
-        ]);
-      }
-    });
+        }
+      });
 
-    autoTable(doc, {
-      startY: 20,
-      head: [['Team ID', 'Team Name', 'Place', 'Role', 'Member Name', 'Superset ID', 'Email', 'Problem Statement']],
-      body: rows,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [79, 70, 229] }
-    });
-    doc.save('hackathon_teams_members.pdf');
+      autoTable(doc, {
+        startY: 20,
+        head: [['Team ID', 'Team Name', 'Place', 'Role', 'Member Name', 'Superset ID', 'Email', 'Problem Statement']],
+        body: rows,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [79, 70, 229] }
+      });
+      doc.save('hackathon_teams_members.pdf');
+    } catch (err) {
+      console.error('Export PDF error:', err);
+      alert('Failed to export PDF');
+    } finally {
+      setIsExportingPDF(false);
+    }
   };
 
   return (
@@ -856,18 +967,18 @@ export function UserManagementBoard({
       {activeTab === 'teams' && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Registered Teams ({filteredTeams.length})</h3>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Registered Teams ({totalTeamsCount})</h3>
             <div className="flex flex-wrap items-center gap-2">
               <Input 
                 type="text" 
                 placeholder="Search teams, IDs, leads..." 
                 value={teamSearchQuery} 
-                onChange={e => setTeamSearchQuery(e.target.value)}
+                onChange={e => handleSearchChange(e.target.value)}
               />
               <select
                 className="p-2.5 text-sm border border-slate-300 rounded-xl bg-white dark:bg-slate-900 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 value={teamSizeFilter}
-                onChange={e => setTeamSizeFilter(e.target.value)}
+                onChange={e => handleSizeChange(e.target.value)}
               >
                 <option value="">All Sizes</option>
                 {[1, 2, 3, 4].map(size => (
@@ -877,10 +988,10 @@ export function UserManagementBoard({
               <select
                 className="p-2.5 text-sm border border-slate-300 rounded-xl bg-white dark:bg-slate-900 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 value={teamCollegeFilter}
-                onChange={e => setTeamCollegeFilter(e.target.value)}
+                onChange={e => handlePlaceChange(e.target.value)}
               >
                 <option value="">All Places</option>
-                {Array.from(new Set(teams.map(t => (t.place || t.collegeName)?.trim()).filter(Boolean))).map(place => (
+                {distinctPlacesList.map(place => (
                   <option key={String(place)} value={String(place)}>{place}</option>
                 ))}
               </select>
@@ -895,11 +1006,11 @@ export function UserManagementBoard({
               <Button size="sm" variant="outline" onClick={() => router.push('/admin/import-teams')} leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-600" />}>
                 Import CSV
               </Button>
-              <Button size="sm" variant="outline" onClick={exportTeamsCSV} leftIcon={<Download className="w-4 h-4" />}>
-                Export CSV
+              <Button size="sm" variant="outline" onClick={exportTeamsCSV} disabled={isExportingCSV} leftIcon={isExportingCSV ? <div className="w-4 h-4 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" /> : <Download className="w-4 h-4" />}>
+                {isExportingCSV ? 'Exporting...' : 'Export CSV'}
               </Button>
-              <Button size="sm" variant="outline" onClick={exportTeamsPDF} leftIcon={<FileText className="w-4 h-4" />}>
-                Export PDF
+              <Button size="sm" variant="outline" onClick={exportTeamsPDF} disabled={isExportingPDF} leftIcon={isExportingPDF ? <div className="w-4 h-4 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" /> : <FileText className="w-4 h-4" />}>
+                {isExportingPDF ? 'Exporting...' : 'Export PDF'}
               </Button>
             </div>
           </div>
@@ -918,10 +1029,14 @@ export function UserManagementBoard({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTeams.length === 0 ? (
-                    <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500 italic">No teams found matching the criteria.</td></tr>
+                  {currentTeams.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500 italic">
+                        {isTeamsLoading ? 'Loading teams...' : 'No teams found matching the criteria.'}
+                      </td>
+                    </tr>
                   ) : (
-                    paginatedTeams.map(team => {
+                    currentTeams.map(team => {
                       const hasConflict = teamConflictMap.has(team.name);
                       const conflictInfo = teamConflictMap.get(team.name);
                       return (
@@ -987,10 +1102,10 @@ export function UserManagementBoard({
                 </tbody>
               </table>
             </div>
-            {filteredTeams.length > 0 && (
+            {totalTeamsCount > 0 && (
               <Pagination
                 currentPage={teamPage}
-                totalItems={filteredTeams.length}
+                totalItems={totalTeamsCount}
                 pageSize={teamPageSize}
                 onPageChange={setTeamPage}
                 onPageSizeChange={(newSize) => {

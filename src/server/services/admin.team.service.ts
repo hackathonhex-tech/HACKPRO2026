@@ -10,6 +10,129 @@ export async function getTeams(user: any) {
   return await teamRepo.findTeams(query);
 }
 
+export async function getPaginatedTeams(
+  user: any,
+  options: { page?: number; limit?: number; search?: string; place?: string; size?: string } = {}
+) {
+  const query: any = {};
+  if (user.role === 'judge') {
+    query.assignedJudges = user.id;
+  }
+
+  const { search, place, size, page = 1, limit = 10 } = options;
+
+  // Search filter across name, uniqueId, leadName, leadEmail, place, and members
+  if (search && search.trim()) {
+    const cleanSearch = search.trim();
+    const escaped = cleanSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'i');
+    query.$or = [
+      { name: regex },
+      { uniqueId: regex },
+      { leadName: regex },
+      { leadEmail: regex },
+      { leadPhone: regex },
+      { leadEmpId: regex },
+      { leadSupersetId: regex },
+      { place: regex },
+      { collegeName: regex },
+      { 'members.name': regex },
+      { 'members.email': regex },
+      { 'members.empId': regex },
+      { 'members.supersetId': regex }
+    ];
+  }
+
+  // Place filter
+  if (place && place.trim()) {
+    const cleanPlace = place.trim();
+    const escapedPlace = cleanPlace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regPlace = new RegExp(`^${escapedPlace}$`, 'i');
+    query.$and = query.$and || [];
+    query.$and.push({
+      $or: [
+        { place: regPlace },
+        { collegeName: regPlace }
+      ]
+    });
+  }
+
+  // Team Size filter
+  if (size && size.trim() !== '') {
+    const sizeInt = parseInt(size, 10);
+    if (!isNaN(sizeInt)) {
+      query.members = { $size: sizeInt };
+    }
+  }
+
+  const [paginatedResult, distinctPlaces, conflictingTeamNames] = await Promise.all([
+    teamRepo.findPaginatedTeams(query, page, limit),
+    teamRepo.getDistinctTeamPlaces(),
+    teamRepo.getConflictingTeamNames()
+  ]);
+
+  return {
+    ...paginatedResult,
+    distinctPlaces,
+    conflictingTeamNames
+  };
+}
+
+export async function getAllFilteredTeams(
+  user: any,
+  options: { search?: string; place?: string; size?: string } = {}
+) {
+  const query: any = {};
+  if (user.role === 'judge') {
+    query.assignedJudges = user.id;
+  }
+
+  const { search, place, size } = options;
+
+  if (search && search.trim()) {
+    const cleanSearch = search.trim();
+    const escaped = cleanSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'i');
+    query.$or = [
+      { name: regex },
+      { uniqueId: regex },
+      { leadName: regex },
+      { leadEmail: regex },
+      { leadPhone: regex },
+      { leadEmpId: regex },
+      { leadSupersetId: regex },
+      { place: regex },
+      { collegeName: regex },
+      { 'members.name': regex },
+      { 'members.email': regex },
+      { 'members.empId': regex },
+      { 'members.supersetId': regex }
+    ];
+  }
+
+  if (place && place.trim()) {
+    const cleanPlace = place.trim();
+    const escapedPlace = cleanPlace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regPlace = new RegExp(`^${escapedPlace}$`, 'i');
+    query.$and = query.$and || [];
+    query.$and.push({
+      $or: [
+        { place: regPlace },
+        { collegeName: regPlace }
+      ]
+    });
+  }
+
+  if (size && size.trim() !== '') {
+    const sizeInt = parseInt(size, 10);
+    if (!isNaN(sizeInt)) {
+      query.members = { $size: sizeInt };
+    }
+  }
+
+  return await teamRepo.findTeams(query);
+}
+
 import Round from '../models/Round';
 
 export async function createTeam(body: any) {
