@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, FileText, Download, User, Building, Phone, Mail, MessageSquare } from 'lucide-react';
+import { CheckCircle, Clock, FileText, Download, User, Phone, Mail, MessageSquare, MapPin } from 'lucide-react';
 
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
@@ -373,8 +373,14 @@ export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps)
                   <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-3">Team Lead</p>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center text-slate-700 dark:text-slate-300">
-                      <User className="w-4 h-4 mr-2 text-slate-400" /> <span className="font-bold">{team.leadName}</span>
+                      <User className="w-4 h-4 mr-2 text-slate-400 shrink-0" /> <span className="font-bold truncate">{team.leadName}</span>
                     </div>
+                    {(team.leadEmpId || team.leadSupersetId || team.supersetId) && (
+                      <div className="flex items-center text-slate-600 dark:text-slate-400 min-w-0">
+                        <span className="w-4 h-4 mr-2 flex items-center justify-center text-[9px] font-mono font-bold text-indigo-600 bg-indigo-100 dark:bg-indigo-900/50 rounded shrink-0">ID</span>
+                        <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate">{team.leadEmpId || team.leadSupersetId || team.supersetId}</span>
+                      </div>
+                    )}
                     {team.leadEmail && (
                       <div className="flex items-center text-slate-600 dark:text-slate-400 min-w-0">
                         <Mail className="w-4 h-4 mr-2 text-slate-400 flex-shrink-0" />
@@ -383,12 +389,13 @@ export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps)
                     )}
                     {team.leadPhone && (
                       <div className="flex items-center text-slate-600 dark:text-slate-400 min-w-0">
-                        <Phone className="w-4 h-4 mr-2 text-slate-400 flex-shrink-0" /> {team.leadPhone}
+                        <Phone className="w-4 h-4 mr-2 text-slate-400 flex-shrink-0" /> <span>{team.leadPhone}</span>
                       </div>
                     )}
-                    {team.collegeName && (
+                    {(team.place || team.collegeName) && (
                       <div className="flex items-center text-slate-600 dark:text-slate-400 min-w-0">
-                        <Building className="w-4 h-4 mr-2 text-slate-400 flex-shrink-0" /> <span className="truncate">{team.collegeName} {team.department && `· ${team.department}`}</span>
+                        <MapPin className="w-4 h-4 mr-2 text-slate-400 flex-shrink-0" />
+                        <span className="truncate">{team.place || team.collegeName}</span>
                       </div>
                     )}
                   </div>
@@ -397,33 +404,47 @@ export function TeamDashboardBoard({ team, feedbacks }: TeamDashboardBoardProps)
 
               {/* Members */}
               <div className="w-full mt-6 text-left">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-100 dark:border-slate-700/50 pb-2">Team Members ({team.members?.length || 0})</p>
-                <div className="space-y-2">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                  Team Members ({team.members?.length || 0})
+                </p>
+                <div className="space-y-2.5">
                   {team.members?.map((m: any, i: number) => (
-                    <div key={i} className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50 min-w-0">
-                      <div className="min-w-0 truncate mr-2">
-                        <span className="font-bold text-slate-800 dark:text-white text-sm">{m.name}</span>
-                        {m.college && <span className="text-xs text-slate-400 ml-2">{m.college}</span>}
+                    <div key={i} className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-bold text-slate-800 dark:text-white text-sm truncate">{m.name}</span>
+                        {(m.empId || m.supersetId) && (
+                          <span className="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900 shrink-0">
+                            ID: {m.empId || m.supersetId}
+                          </span>
+                        )}
                       </div>
-                      <span className="text-xs text-slate-500 min-w-0 truncate" title={m.email || m.contact || ''}>{m.email || m.contact || ''}</span>
+                      <div className="flex items-center justify-between text-xs text-slate-500 gap-2">
+                        <span className="truncate min-w-0" title={m.email || m.contact || ''}>
+                          {m.email || m.contact || '—'}
+                        </span>
+                        <span className="truncate font-medium text-slate-600 dark:text-slate-400 shrink-0" title={m.place || m.college || team.place || team.collegeName || ''}>
+                          {m.place || m.college || team.place || team.collegeName || '—'}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-8 space-y-2">
+              {/* Download Ticket Buttons (Centered & Fully Aligned) */}
+              <div className="mt-8 space-y-2.5 w-full">
                 <button 
                   onClick={() => downloadTicket('pdf')}
                   disabled={downloading}
-                  className="w-full flex items-center justify-center text-sm font-bold bg-[#3c2cda] text-white hover:bg-[#2e21ad] py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-[#3c2cda]/30 disabled:opacity-60 cursor-pointer"
+                  className="w-full flex items-center justify-center text-sm font-bold bg-[#3c2cda] text-white hover:bg-[#2e21ad] py-3.5 px-4 rounded-xl transition-all active:scale-95 shadow-lg shadow-[#3c2cda]/30 disabled:opacity-60 cursor-pointer text-center"
                 >
-                  <Download className="w-4 h-4 mr-2" />
-                  {downloading ? 'Preparing Ticket...' : 'Download Ticket as PDF'}
+                  <Download className="w-4 h-4 mr-2 shrink-0" />
+                  <span>{downloading ? 'Preparing Ticket...' : 'Download Ticket as PDF'}</span>
                 </button>
                 <button 
                   onClick={() => downloadTicket('png')}
                   disabled={downloading}
-                  className="w-full flex items-center justify-center text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 py-1 transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-center text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 py-1.5 transition-colors cursor-pointer text-center"
                 >
                   Download as Image (PNG)
                 </button>

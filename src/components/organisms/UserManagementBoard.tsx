@@ -1627,9 +1627,11 @@ export function UserManagementBoard({
                       }`}
                     >
                       <div className="flex items-center justify-between mb-4">
-                        <h5 className="font-bold text-slate-900 dark:text-white text-base flex items-center">
-                          <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 flex items-center justify-center text-xs font-bold mr-3">{idx + 1}</span>
-                          {m.name || 'Unknown Member'}
+                        <h5 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider flex items-center">
+                          <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 flex items-center justify-center text-xs font-bold mr-2">
+                            {idx + 1}
+                          </span>
+                          MEMBER {idx + 1}
                         </h5>
                         <div className="flex items-center gap-2">
                           {isDuplicateMember && (
@@ -1638,26 +1640,31 @@ export function UserManagementBoard({
                               Duplicate Member
                             </span>
                           )}
-                          {(m.empId || m.supersetId) && (
-                            <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1 rounded-xl border border-indigo-100 dark:border-indigo-500/20">
-                              ID: {m.empId || m.supersetId}
-                            </span>
-                          )}
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="min-w-0">
-                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Employee ID</span>
-                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate block text-xs">{m.empId || m.supersetId || '-'}</span>
+                          <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">Employee Name</p>
+                          <p className="font-semibold text-slate-900 dark:text-white truncate">{m.name || 'Not provided'}</p>
                         </div>
                         <div className="min-w-0">
-                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Email Address</span>
-                          <span className="text-slate-700 dark:text-slate-300 break-all block text-xs font-medium" title={m.email}>{m.email || '-'}</span>
+                          <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">Employee ID</p>
+                          <p className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate">{m.empId || m.supersetId || 'Not provided'}</p>
                         </div>
                         <div className="min-w-0">
-                          <span className="text-[11px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Location / Place</span>
-                          <span className="text-slate-700 dark:text-slate-300 truncate block text-xs font-medium" title={m.place || m.college || viewingTeam.place || viewingTeam.collegeName}>{m.place || m.college || viewingTeam.place || viewingTeam.collegeName || '-'}</span>
+                          <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">Email Address</p>
+                          <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
+                            <Mail className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
+                            <span className="break-all text-xs sm:text-sm">{m.email || 'Not provided'}</span>
+                          </p>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">Location / Place</p>
+                          <p className="font-medium text-slate-900 dark:text-white flex items-center min-w-0">
+                            <Building className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
+                            <span className="truncate" title={m.place || m.college || viewingTeam.place || viewingTeam.collegeName}>{m.place || m.college || viewingTeam.place || viewingTeam.collegeName || 'Not provided'}</span>
+                          </p>
                         </div>
                       </div>
 
