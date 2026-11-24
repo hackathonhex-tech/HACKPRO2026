@@ -140,7 +140,7 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = ({
                 </button>
               </div>
 
-              <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+              <nav className="flex-1 overflow-y-auto p-4 space-y-1 no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {navItems.map((item) => {
                   const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin/dashboard' && item.href !== '/judge/dashboard' && item.href !== '/team/dashboard');
                   return (
@@ -194,7 +194,7 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = ({
             <p className="text-[11px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">{subtitle}</p>
           </div>
         
-          <nav className="flex-1 overflow-y-auto mt-4 px-3 space-y-1">
+          <nav className="flex-1 overflow-y-auto mt-4 px-3 space-y-1 no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {navItems.map((item, idx) => {
               const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin/dashboard' && item.href !== '/judge/dashboard' && item.href !== '/team/dashboard');
               return (
