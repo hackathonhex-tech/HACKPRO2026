@@ -161,6 +161,22 @@ export async function updateTeamAttendanceAction(id: string, attendance: boolean
   }
 }
 
+export async function updateTeamAttendanceBatchAction(
+  id: string,
+  memberAttendances: boolean[],
+  teamAttendance?: boolean
+) {
+  const auth = await verifyApiAuth(['admin', 'sub-admin', 'judge'], ['manage_users', 'attendance', 'scanner']);
+  if (!auth.authenticated) return { success: false, message: auth.error };
+
+  try {
+    const team = await adminTeamService.updateTeamMembersAttendanceBatch(id, memberAttendances, teamAttendance);
+    return { success: true, team };
+  } catch (err: any) {
+    return { success: false, message: err.message === 'Team not found' ? 'Team not found' : 'Server error' };
+  }
+}
+
 export async function updateMemberAttendanceAction(id: string, memberIndex: number, attendance: boolean) {
   const auth = await verifyApiAuth(['admin', 'sub-admin', 'judge'], ['manage_users', 'attendance', 'scanner']);
   if (!auth.authenticated) return { success: false, message: auth.error };

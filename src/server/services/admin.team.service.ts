@@ -199,6 +199,30 @@ export async function updateTeamAttendance(id: string, attendance: boolean) {
   return await teamRepo.updateTeam(team._id, { attendance });
 }
 
+export async function updateTeamMembersAttendanceBatch(
+  id: string,
+  memberAttendances: boolean[],
+  customTeamAttendance?: boolean
+) {
+  const team = await teamRepo.findTeamByIdOrUniqueId(id);
+  if (!team) throw new Error('Team not found');
+
+  if (team.members && Array.isArray(team.members)) {
+    team.members = team.members.map((m: any, idx: number) => ({
+      ...m,
+      attendance: memberAttendances[idx] !== undefined ? Boolean(memberAttendances[idx]) : Boolean(m.attendance)
+    }));
+  }
+
+  const anyPresent = team.members ? team.members.some((m: any) => m.attendance === true) : false;
+  const isTeamPresent = customTeamAttendance !== undefined ? customTeamAttendance : anyPresent;
+
+  return await teamRepo.updateTeam(team._id, {
+    members: team.members,
+    attendance: isTeamPresent
+  });
+}
+
 export async function updateMemberAttendance(id: string, memberIndex: number, attendance: boolean) {
   const team = await teamRepo.findTeamById(id);
   if (!team) throw new Error('Team not found');

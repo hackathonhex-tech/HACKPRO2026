@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ScannerBoard } from '@/components/organisms/ScannerBoard';
 import { getTeamByUniqueIdAction } from '@/server/actions/team.actions';
-import { updateMemberAttendanceAction, updateTeamAttendanceAction } from '@/server/actions/admin.team.actions';
+import { updateTeamAttendanceBatchAction } from '@/server/actions/admin.team.actions';
 import { getMeAction } from '@/server/actions/auth.actions';
 
 export default function JudgeScannerPage() {
@@ -52,49 +52,29 @@ export default function JudgeScannerPage() {
     setLoading(false);
   }, []);
 
-  const handleToggleAttendance = async (memberIndex: number, currentStatus: boolean) => {
+  const handleSaveAttendance = async (memberAttendances: boolean[], teamAttendance?: boolean) => {
     if (!teamInfo) return;
-    setLoading(true);
     try {
-      const newStatus = !currentStatus;
-      await updateMemberAttendanceAction(teamInfo._id, memberIndex, newStatus);
-      
-      const updatedMembers = [...teamInfo.members];
-      updatedMembers[memberIndex].attendance = newStatus;
-      const anyPresent = updatedMembers.some((m: any) => m.attendance === true);
-      setTeamInfo({ 
-        ...teamInfo, 
-        members: updatedMembers,
-        attendance: anyPresent || Boolean(teamInfo.attendance)
-      });
-      
-      setMessage({ text: `Marked ${updatedMembers[memberIndex].name} as ${newStatus ? 'Present' : 'Absent'}`, type: 'success' });
-      setTimeout(() => setMessage(null), 2000);
+      const res = await updateTeamAttendanceBatchAction(teamInfo._id, memberAttendances, teamAttendance);
+      if (res.success) {
+        const presentCount = memberAttendances.filter(Boolean).length;
+        setMessage({ 
+          text: `✓ Attendance saved: ${teamInfo.name} (${presentCount}/${memberAttendances.length} present)`, 
+          type: 'success' 
+        });
+        setTimeout(() => setMessage(null), 3000);
+        return true;
+      } else {
+        setMessage({ text: res.message || 'Failed to save attendance', type: 'error' });
+      }
     } catch {
-      setMessage({ text: 'Failed to update attendance.', type: 'error' });
+      setMessage({ text: 'Failed to save attendance', type: 'error' });
     }
-    setLoading(false);
   };
 
   const handleReset = useCallback(() => {
     setTeamInfo(null);
   }, []);
-
-  const handleToggleTeamAttendance = async (currentStatus: boolean) => {
-    if (!teamInfo) return;
-    setLoading(true);
-    try {
-      const newStatus = !currentStatus;
-      await updateTeamAttendanceAction(teamInfo._id, newStatus);
-      
-      setTeamInfo({ ...teamInfo, attendance: newStatus });
-      setMessage({ text: `Team ${newStatus ? 'checked in' : 'check-in revoked'}`, type: 'success' });
-      setTimeout(() => setMessage(null), 2000);
-    } catch {
-      setMessage({ text: 'Failed to update team attendance.', type: 'error' });
-    }
-    setLoading(false);
-  };
 
   if (checkingAccess) {
     return null;
@@ -105,8 +85,7 @@ export default function JudgeScannerPage() {
       onScanResult={fetchTeamInfo}
       teamInfo={teamInfo}
       message={message}
-      onToggleAttendance={handleToggleAttendance}
-      onToggleTeamAttendance={handleToggleTeamAttendance}
+      onSaveAttendance={handleSaveAttendance}
       onReset={handleReset}
       loading={loading}
     />

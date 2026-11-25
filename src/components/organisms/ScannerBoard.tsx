@@ -13,22 +13,43 @@ export interface ScannerBoardProps {
   onScanResult: (result: string) => void;
   teamInfo: any | null;
   message: { text: string; type: 'error' | 'success' | 'info' } | null;
-  onToggleAttendance: (memberIndex: number, currentStatus: boolean) => Promise<void>;
+  onToggleAttendance?: (memberIndex: number, currentStatus: boolean) => Promise<void>;
   onToggleTeamAttendance?: (currentStatus: boolean) => Promise<void>;
+  onSaveAttendance?: (memberAttendances: boolean[], teamAttendance?: boolean) => Promise<boolean | void>;
   onReset: () => void;
   loading: boolean;
 }
 
-export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendance, onToggleTeamAttendance, onReset, loading }: ScannerBoardProps) {
+export function ScannerBoard({ 
+  onScanResult, 
+  teamInfo, 
+  message, 
+  onToggleAttendance, 
+  onToggleTeamAttendance, 
+  onSaveAttendance,
+  onReset, 
+  loading 
+}: ScannerBoardProps) {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [manualId, setManualId] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [localMembers, setLocalMembers] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const isStartingRef = useRef(false);
   const isMountedRef = useRef(true);
+
+  // Sync local members when teamInfo is loaded or changed
+  useEffect(() => {
+    if (teamInfo?.members && Array.isArray(teamInfo.members)) {
+      setLocalMembers(teamInfo.members.map((m: any) => ({ ...m })));
+    } else {
+      setLocalMembers([]);
+    }
+  }, [teamInfo]);
 
   // Suppress unhandled play() interruption errors and camera abort throws
   useEffect(() => {
@@ -292,12 +313,44 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
     setManualId('');
     setShowManual(false);
     setCameraPermissionDenied(false);
+    setLocalMembers([]);
     onReset();
   }, [stopScanner, onReset]);
 
-  const presentCount = teamInfo?.members?.filter((m: any) => m.attendance).length || 0;
-  const totalMembers = teamInfo?.members?.length || 0;
-  const isAlreadyScanned = Boolean(teamInfo?.attendance || presentCount > 0);
+  const toggleMemberAttendance = (index: number) => {
+    setLocalMembers(prev => prev.map((m, idx) => idx === index ? { ...m, attendance: !m.attendance } : m));
+  };
+
+  const handleMarkAll = (status: boolean) => {
+    setLocalMembers(prev => prev.map(m => ({ ...m, attendance: status })));
+  };
+
+  const handleSaveAndNext = async () => {
+    if (!teamInfo) return;
+    setIsSaving(true);
+    try {
+      const statuses = localMembers.map((m: any) => Boolean(m.attendance));
+      const anyPresent = statuses.some(s => s === true);
+
+      if (onSaveAttendance) {
+        await onSaveAttendance(statuses, anyPresent);
+      } else if (onToggleTeamAttendance) {
+        await onToggleTeamAttendance(anyPresent);
+      }
+      resetScanner();
+    } catch (err) {
+      console.error('Error saving attendance:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const presentCount = localMembers.filter((m: any) => Boolean(m.attendance)).length;
+  const totalMembers = localMembers.length;
+  const isAlreadyScanned = Boolean(
+    teamInfo?.attendance || 
+    (teamInfo?.members && teamInfo.members.some((m: any) => m.attendance))
+  );
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto pb-10 pt-4">
@@ -429,7 +482,7 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
                 }`}>
                   {presentCount === totalMembers && totalMembers > 0
                     ? `Team Already Scanned — All ${totalMembers} Present`
-                    : `Team Already Scanned — Partial Attendance (${presentCount} of ${totalMembers} Present)`}
+                    : `Team Already Scanned — (${presentCount} of ${totalMembers} Present)`}
                 </h4>
                 <p className={`text-sm mt-1.5 max-w-md ${
                   presentCount === totalMembers && totalMembers > 0
@@ -437,42 +490,78 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
                     : 'text-amber-700/80 dark:text-amber-400/80'
                 }`}>
                   {presentCount === totalMembers && totalMembers > 0
-                    ? 'All members have been marked present. You can adjust member attendance below if needed, or scan the next ticket.'
-                    : 'This team was previously checked in. You can mark present for any newly arrived members below, then click "Done / Scan Next".'}
+                    ? 'All members have been marked present. You can adjust member attendance below if needed, or click "Save & Next" to proceed.'
+                    : 'This team was previously checked in. Toggle newly arrived members below, then click "Save & Next" to record attendance.'}
                 </p>
               </div>
             )}
 
             <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-xs">
-                  Team Members ({presentCount} / {totalMembers} Present)
-                </h4>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                  Tap to toggle attendance
-                </span>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div>
+                  <h4 className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-xs">
+                    Team Members ({presentCount} / {totalMembers} Present)
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">Tap member or button to toggle attendance</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleMarkAll(true)}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors flex items-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Mark All Present
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkAll(false)}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors"
+                  >
+                    Mark All Absent
+                  </button>
+                </div>
               </div>
+              
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {teamInfo.members.map((m: any, i: number) => {
+                {localMembers.map((m: any, i: number) => {
                   const isLead = m.email === teamInfo.leadEmail;
+                  const isPresent = Boolean(m.attendance);
                   return (
-                    <div key={i} className={`flex flex-col p-4 rounded-xl border ${isLead ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/20' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-700/50'}`}>
+                    <div 
+                      key={i} 
+                      onClick={() => toggleMemberAttendance(i)}
+                      className={`flex flex-col p-4 rounded-xl border cursor-pointer select-none transition-all ${
+                        isPresent 
+                          ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-600/40 shadow-sm' 
+                          : isLead 
+                            ? 'bg-indigo-50/60 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/20' 
+                            : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700/50 hover:border-slate-300'
+                      }`}
+                    >
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-1.5">
                           <span className="font-bold text-slate-800 dark:text-white">{m.name}</span>
-                          {isLead && <span className="ml-2 text-[10px] font-bold bg-indigo-500 text-white px-1.5 py-0.5 rounded tracking-wide">TEAM LEAD</span>}
+                          {isLead && <span className="text-[10px] font-bold bg-indigo-500 text-white px-1.5 py-0.5 rounded tracking-wide">TEAM LEAD</span>}
                         </div>
+                        {isPresent && (
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Present
+                          </span>
+                        )}
                       </div>
                       <span className="text-xs text-slate-500 mb-3">{m.email || m.contact || '—'} {m.college && `· ${m.college}`}</span>
                       
                       <Button
-                        onClick={() => onToggleAttendance(i, m.attendance)}
-                        disabled={loading}
-                        variant={m.attendance ? 'success' : 'outline'}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleMemberAttendance(i);
+                        }}
+                        variant={isPresent ? 'success' : 'outline'}
                         fullWidth
-                        leftIcon={m.attendance ? <Check className="w-4 h-4" /> : <div className="w-4 h-4 rounded-full border-2 border-slate-400 dark:border-slate-500" />}
+                        leftIcon={isPresent ? <Check className="w-4 h-4" /> : <div className="w-4 h-4 rounded-full border-2 border-slate-400 dark:border-slate-500" />}
                       >
-                        {m.attendance ? 'Marked Present' : 'Mark Present'}
+                        {isPresent ? 'Marked Present' : 'Mark Present'}
                       </Button>
                     </div>
                   );
@@ -484,22 +573,18 @@ export function ScannerBoard({ onScanResult, teamInfo, message, onToggleAttendan
               <Button
                 variant="primary"
                 fullWidth
-                onClick={async () => {
-                  if (onToggleTeamAttendance && !teamInfo.attendance) {
-                    await onToggleTeamAttendance(false);
-                  }
-                  resetScanner();
-                }}
-                disabled={loading}
-                leftIcon={<Check className="w-5 h-5" />}
+                onClick={handleSaveAndNext}
+                disabled={isSaving || loading}
+                leftIcon={isSaving ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                className="py-3.5 text-base font-bold shadow-md shadow-indigo-500/20"
               >
-                {teamInfo.attendance ? 'Done / Scan Next Ticket' : 'Submit & Scan Next'}
+                {isSaving ? 'Saving Attendance...' : 'Save & Next'}
               </Button>
             </div>
             
             <div className="mt-4 text-center">
-              <Button variant="ghost" onClick={resetScanner} leftIcon={<RefreshCw className="w-4 h-4" />}>
-                Scan Another Ticket
+              <Button variant="ghost" onClick={resetScanner} disabled={isSaving} leftIcon={<RefreshCw className="w-4 h-4" />}>
+                Cancel / Scan Another Ticket
               </Button>
             </div>
           </motion.div>
