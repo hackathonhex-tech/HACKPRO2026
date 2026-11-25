@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShieldCheck, LayoutDashboard, Users, ClipboardList, Clock, BarChart, Scan, ClipboardCheck, FileText, Settings, Sliders, Award, FileEdit, FileSpreadsheet } from 'lucide-react';
+import { ShieldCheck, LayoutDashboard, Users, ClipboardList, Clock, BarChart, Scan, ClipboardCheck, FileText, Settings, Sliders, Award, FileEdit, FileSpreadsheet, HelpCircle } from 'lucide-react';
 import { DashboardTemplate } from '@/components/templates/DashboardTemplate';
 import { getMeAction } from '@/server/actions/auth.actions';
 
@@ -9,6 +9,7 @@ const adminNav = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, permission: 'dashboard' },
   { name: 'QR Scanner', href: '/admin/scanner', icon: Scan, permission: 'scanner' },
   { name: 'User Management', href: '/admin/users', icon: Users, permission: 'manage_users' },
+  { name: 'Support Tickets', href: '/admin/support', icon: HelpCircle, permission: 'support' },
   { name: 'Registration Setup', href: '/admin/registration-fields', icon: FileEdit, permission: 'registration_fields' },
   { name: 'Import Teams', href: '/admin/import-teams', icon: FileSpreadsheet, permission: 'manage_users' },
   { name: 'Assign Judges', href: '/admin/assign', icon: Users, permission: 'assign_judges' },
@@ -26,6 +27,7 @@ function checkPermission(perms: string[], permission?: string): boolean {
   if (!permission) return true;
   if (perms.includes(permission) || perms.includes('admin') || perms.includes('*')) return true;
   // Backward compatibility mappings
+  if (permission === 'support' && (perms.includes('manage_users') || perms.includes('manage_settings') || perms.includes('attendance'))) return true;
   if (permission === 'registration_fields' && (perms.includes('manage_settings') || perms.includes('manage_users'))) return true;
   if (permission === 'assign_judges' && perms.includes('manage_users')) return true;
   if (permission === 'attendance' && perms.includes('manage_users')) return true;

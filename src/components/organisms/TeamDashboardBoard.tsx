@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useState } from 'react';
+import Link from 'next/link';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, FileText, Download, User, Phone, Mail, MessageSquare, MapPin } from 'lucide-react';
+import { CheckCircle, Clock, FileText, Download, User, Phone, Mail, MessageSquare, MapPin, HelpCircle } from 'lucide-react';
 
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
@@ -604,6 +605,18 @@ export function TeamDashboardBoard({ team, feedbacks, currentUser }: TeamDashboa
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Discreet Help / Contact Support under Latest Feedback */}
+          <div className="mt-2.5 flex items-center justify-end px-2">
+            <Link
+              href="/team/support"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/60"
+              title="Facing any issue? Contact Support"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>Contact Support</span>
+            </Link>
           </div>
         </div>
       </div>
