@@ -54,17 +54,17 @@ export function DeliverableList({ deliverables, loading, onRefresh }: Deliverabl
   const paginatedDeliverables = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const downloadCSV = () => {
-    const headers = ['Team Name', 'Team ID', 'Round', 'Track', 'Problem Statement', 'Abstract', 'GitHub Link', 'Pitch Deck', 'Demo Video / Website Link'];
+    const headers = ['Team ID', 'Team Name', 'Problem Statement', 'Track', 'Round', 'GitHub Link', 'Pitch Deck', 'Demo Video', 'Abstract'];
     const rows = filtered.map(d => [
-      `"${(d.teamId?.name || 'Unknown Team').replace(/"/g, '""')}"`,
       d.teamId?.uniqueId || '',
-      d.roundId?.name || 'Unknown Round',
+      `"${(d.teamId?.name || 'Unknown Team').replace(/"/g, '""')}"`,
+      `"${(d.teamId?.problemStatementId?.title || 'Not Selected').replace(/"/g, '""')}"`,
       d.teamId?.problemStatementId?.track || '',
-      `"${(d.teamId?.problemStatementId?.title || '').replace(/"/g, '""')}"`,
-      `"${(d.abstract || '').replace(/"/g, '""')}"`,
+      d.roundId?.name || 'Unknown Round',
       d.githubLink || '',
       d.deckUrl || '',
-      d.videoLink || ''
+      d.videoLink || '',
+      `"${(d.abstract || '').replace(/"/g, '""')}"`
     ]);
 
     const csvContent = [
@@ -76,7 +76,7 @@ export function DeliverableList({ deliverables, loading, onRefresh }: Deliverabl
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'deliverables.csv');
+    link.setAttribute('download', 'hackathon_deliverables.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -86,27 +86,33 @@ export function DeliverableList({ deliverables, loading, onRefresh }: Deliverabl
     const jsPDF = (await import('jspdf')).default;
     const autoTable = (await import('jspdf-autotable')).default;
     
-    const doc = new jsPDF('l', 'pt', 'a4');
-    doc.text('Deliverables Report', 40, 40);
+    const doc = new jsPDF('landscape');
+    doc.setFontSize(16);
+    doc.text('Hackathon Deliverables Report', 14, 15);
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Total Deliverables: ${filtered.length} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
     
-    const tableColumn = ['Team Name', 'Team ID', 'Round', 'Track', 'GitHub', 'Pitch Deck', 'Video'];
+    const tableColumn = ['Team ID', 'Team Name', 'Problem Statement', 'Track', 'GitHub Repo', 'Pitch Deck', 'Demo Video'];
     const tableRows = filtered.map(d => [
-      d.teamId?.name || 'Unknown',
       d.teamId?.uniqueId || '',
-      d.roundId?.name || 'Unknown',
-      d.teamId?.problemStatementId?.track || '',
-      d.githubLink || 'No',
-      d.deckUrl || 'No',
-      d.videoLink || 'No'
+      d.teamId?.name || 'Unknown',
+      d.teamId?.problemStatementId?.title || 'Not Selected',
+      d.teamId?.problemStatementId?.track || 'N/A',
+      d.githubLink || 'No link',
+      d.deckUrl || 'No link',
+      d.videoLink || 'No link'
     ]);
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 60,
+      startY: 28,
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [55, 96, 248], textColor: [255, 255, 255], fontStyle: 'bold' }
     });
 
-    doc.save('deliverables.pdf');
+    doc.save('hackathon_deliverables.pdf');
   };
 
   const handleEditClick = (d: any) => {

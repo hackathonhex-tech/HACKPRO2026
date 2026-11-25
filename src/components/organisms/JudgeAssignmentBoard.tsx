@@ -130,16 +130,17 @@ export function JudgeAssignmentBoard() {
     const doc = new jsPDF('landscape');
     
     doc.setFontSize(16);
-    doc.text("Judge Assignments", 14, 15);
+    doc.text("Hackathon Judge Assignments Report", 14, 15);
     
     doc.setFontSize(10);
-    doc.text(`Total Teams: ${targetTeams.length}`, 14, 22);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Total Teams: ${targetTeams.length} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
     
-    const tableColumn = ["Team Name", "Team ID", "Problem Statement", "Track", "Assigned Judges"];
+    const tableColumn = ["Team ID", "Team Name", "Problem Statement", "Track", "Assigned Judges"];
     const tableRows = targetTeams.map(t => {
       return [
-        t.name,
         t.uniqueId,
+        t.name,
         t.problemStatementId?.title || 'N/A',
         t.problemStatementId?.track || 'N/A',
         t.assignedJudges?.map((j: any) => j.name).join(', ') || 'None'
@@ -149,9 +150,9 @@ export function JudgeAssignmentBoard() {
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 30,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [79, 70, 229] }
+      startY: 28,
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [55, 96, 248], textColor: [255, 255, 255], fontStyle: 'bold' }
     });
     
     doc.save("hackathon_judge_assignments.pdf");

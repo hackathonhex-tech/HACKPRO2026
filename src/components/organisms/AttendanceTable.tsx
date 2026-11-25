@@ -35,15 +35,11 @@ export function AttendanceTable({ teams, loading, onToggleMemberAttendance, onMa
     const headers = [
       'Team ID',
       'Team Name',
-      'College',
-      'Department',
-      'Problem Statement Title',
-      'Track',
-      'Member Role',
-      'Student Name',
-      'Superset ID',
+      'Employee ID',
+      'Employee Name',
       'Email',
-      'Phone',
+      'Role',
+      'Problem Statement',
       'Attendance Status'
     ];
 
@@ -51,42 +47,34 @@ export function AttendanceTable({ teams, loading, onToggleMemberAttendance, onMa
 
     teams.forEach(t => {
       const psTitle = t.problemStatementId?.title || 'Not Selected';
-      const psTrack = t.problemStatementId?.track || 'N/A';
 
       if (t.members && t.members.length > 0) {
         t.members.forEach((m: any, idx: number) => {
           const isLead = (m.email && m.email === t.leadEmail) || (m.name === t.leadName && idx === 0);
           const role = isLead ? 'Team Lead' : `Member ${idx + 1}`;
-          const supersetId = m.supersetId || (isLead ? (t.leadSupersetId || t.supersetId || '') : '');
+          const empId = m.employeeId || m.empId || m.supersetId || (isLead ? (t.leadEmployeeId || t.leadEmpId || t.leadSupersetId || t.supersetId || '') : '');
           
           rows.push([
             t.uniqueId,
             `"${(t.name || '').replace(/"/g, '""')}"`,
-            `"${(t.collegeName || '').replace(/"/g, '""')}"`,
-            `"${(t.department || '').replace(/"/g, '""')}"`,
-            `"${(psTitle || '').replace(/"/g, '""')}"`,
-            `"${(psTrack || '').replace(/"/g, '""')}"`,
-            `"${role}"`,
+            `"${(empId || '').replace(/"/g, '""')}"`,
             `"${(m.name || '').replace(/"/g, '""')}"`,
-            `"${(supersetId || '').replace(/"/g, '""')}"`,
             `"${(m.email || '').replace(/"/g, '""')}"`,
-            `"${(m.phone || m.contact || '').replace(/"/g, '""')}"`,
+            `"${role}"`,
+            `"${(psTitle || '').replace(/"/g, '""')}"`,
             m.attendance ? 'PRESENT' : 'ABSENT'
           ].join(','));
         });
       } else {
+        const empId = t.leadEmployeeId || t.leadEmpId || t.leadSupersetId || t.supersetId || '';
         rows.push([
           t.uniqueId,
           `"${(t.name || '').replace(/"/g, '""')}"`,
-          `"${(t.collegeName || '').replace(/"/g, '""')}"`,
-          `"${(t.department || '').replace(/"/g, '""')}"`,
-          `"${(psTitle || '').replace(/"/g, '""')}"`,
-          `"${(psTrack || '').replace(/"/g, '""')}"`,
-          '"Team Lead"',
+          `"${(empId || '').replace(/"/g, '""')}"`,
           `"${(t.leadName || '').replace(/"/g, '""')}"`,
-          `"${(t.leadSupersetId || t.supersetId || '').replace(/"/g, '""')}"`,
           `"${(t.leadEmail || '').replace(/"/g, '""')}"`,
-          `"${(t.leadPhone || '').replace(/"/g, '""')}"`,
+          '"Team Lead"',
+          `"${(psTitle || '').replace(/"/g, '""')}"`,
           t.attendance ? 'PRESENT' : 'ABSENT'
         ].join(','));
       }
@@ -97,7 +85,7 @@ export function AttendanceTable({ teams, loading, onToggleMemberAttendance, onMa
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'hackathon_student_attendance.csv');
+    link.setAttribute('download', 'hackathon_attendance_report.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -111,13 +99,13 @@ export function AttendanceTable({ teams, loading, onToggleMemberAttendance, onMa
     
     doc.setFontSize(16);
     doc.setTextColor(15, 23, 42);
-    doc.text("Hackathon Student Attendance Report", 14, 15);
+    doc.text("Hackathon Attendance Report", 14, 15);
     
     doc.setFontSize(10);
     doc.setTextColor(100, 116, 139);
-    const totalStudents = teams.reduce((acc, t) => acc + (t.members?.length || 1), 0);
+    const totalMembers = teams.reduce((acc, t) => acc + (t.members?.length || 1), 0);
     const totalPresent = teams.reduce((acc, t) => acc + (t.members?.filter((m: any) => m.attendance).length || (t.attendance ? 1 : 0)), 0);
-    doc.text(`Total Teams: ${teams.length} | Total Students: ${totalStudents} | Present: ${totalPresent} | Absent: ${totalStudents - totalPresent} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(`Total Teams: ${teams.length} | Total Participants: ${totalMembers} | Present: ${totalPresent} | Absent: ${totalMembers - totalPresent} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
 
     const tableRows: any[] = [];
     teams.forEach(t => {
@@ -126,31 +114,28 @@ export function AttendanceTable({ teams, loading, onToggleMemberAttendance, onMa
         t.members.forEach((m: any, idx: number) => {
           const isLead = (m.email && m.email === t.leadEmail) || (m.name === t.leadName && idx === 0);
           const role = isLead ? 'Team Lead' : `Member ${idx + 1}`;
-          const supersetId = m.supersetId || (isLead ? (t.leadSupersetId || t.supersetId || '—') : '—');
+          const empId = m.employeeId || m.empId || m.supersetId || (isLead ? (t.leadEmployeeId || t.leadEmpId || t.leadSupersetId || t.supersetId || '—') : '—');
           
           tableRows.push([
             t.uniqueId,
             t.name,
-            t.collegeName || '—',
-            role,
+            empId,
             m.name || '—',
-            supersetId,
             m.email || '—',
-            m.phone || m.contact || '—',
+            role,
             psTitle,
             m.attendance ? 'PRESENT' : 'ABSENT'
           ]);
         });
       } else {
+        const empId = t.leadEmployeeId || t.leadEmpId || t.leadSupersetId || t.supersetId || '—';
         tableRows.push([
           t.uniqueId,
           t.name,
-          t.collegeName || '—',
-          'Team Lead',
+          empId,
           t.leadName || '—',
-          t.leadSupersetId || t.supersetId || '—',
           t.leadEmail || '—',
-          t.leadPhone || '—',
+          'Team Lead',
           psTitle,
           t.attendance ? 'PRESENT' : 'ABSENT'
         ]);
@@ -158,13 +143,13 @@ export function AttendanceTable({ teams, loading, onToggleMemberAttendance, onMa
     });
 
     autoTable(doc, {
-      head: [['Team ID', 'Team Name', 'College', 'Role', 'Student Name', 'Superset ID', 'Email', 'Phone', 'Problem Statement', 'Status']],
+      head: [['Team ID', 'Team Name', 'Employee ID', 'Employee Name', 'Email', 'Role', 'Problem Statement', 'Status']],
       body: tableRows,
       startY: 28,
       styles: { fontSize: 8, cellPadding: 3 },
-      headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: 'bold' },
+      headStyles: { fillColor: [55, 96, 248], textColor: [255, 255, 255], fontStyle: 'bold' },
       didParseCell: function(data) {
-        if (data.section === 'body' && data.column.index === 8) {
+        if (data.section === 'body' && data.column.index === 7) {
           if (data.cell.raw === 'PRESENT') {
             data.cell.styles.textColor = [16, 185, 129];
             data.cell.styles.fontStyle = 'bold';
@@ -176,7 +161,7 @@ export function AttendanceTable({ teams, loading, onToggleMemberAttendance, onMa
       }
     });
 
-    doc.save("hackathon_student_attendance.pdf");
+    doc.save("hackathon_attendance_report.pdf");
   };
 
   return (
@@ -334,7 +319,7 @@ export function AttendanceTable({ teams, loading, onToggleMemberAttendance, onMa
                                   {member.name}
                                   {isLead && <span className="ml-2 text-[10px] font-bold bg-indigo-500 text-white px-1.5 py-0.5 rounded">LEAD</span>}
                                 </p>
-                                <p className="text-xs text-slate-500">{member.email || member.contact || '—'} {member.college && `· ${member.college}`}</p>
+                                <p className="text-xs text-slate-500">{member.email || member.contact || '—'} {(member.employeeId || member.empId || member.supersetId) && `· Emp ID: ${member.employeeId || member.empId || member.supersetId}`}</p>
                               </div>
                               <button
                                 onClick={(e) => { e.stopPropagation(); onToggleMemberAttendance(team._id, idx, member.attendance); }}

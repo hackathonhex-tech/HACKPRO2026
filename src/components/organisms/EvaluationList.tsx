@@ -94,7 +94,7 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
   const paginatedMissingTeams = missingTeams.slice((missingPage - 1) * missingPageSize, missingPage * missingPageSize);
 
   const exportCSV = () => {
-    const headers = ['Team ID', 'Team Name', 'College', 'Track', 'Problem Statement', 'Judge', 'Round', 'Total Score', 'Team Rubric Score', 'Member Scores', 'Private Comment', 'Public Feedback'];
+    const headers = ['Team ID', 'Team Name', 'Problem Statement', 'Track', 'Judge', 'Round', 'Total Score', 'Team Rubric Score', 'Member Scores', 'Private Comment', 'Public Feedback'];
     const csvContent = [
       headers.join(','),
       ...filteredEvaluations.map(ev => {
@@ -103,9 +103,8 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
         return [
           ev.teamId?.uniqueId || '',
           `"${(ev.teamId?.name || '').replace(/"/g, '""')}"`,
-          `"${(ev.teamId?.collegeName || ev.teamId?.members?.[0]?.college || '').replace(/"/g, '""')}"`,
-          `"${(ev.teamId?.problemStatementId?.track || 'N/A').replace(/"/g, '""')}"`,
           `"${(ev.teamId?.problemStatementId?.title || 'N/A').replace(/"/g, '""')}"`,
+          `"${(ev.teamId?.problemStatementId?.track || 'N/A').replace(/"/g, '""')}"`,
           `"${(ev.judgeId?.name || '').replace(/"/g, '""')}"`,
           `"${(ev.roundId?.name || '').replace(/"/g, '""')}"`,
           ev.totalScore || 0,
@@ -135,7 +134,7 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
       const res = await getAllDeliverablesAction();
       const deliverables = res.success && 'deliverables' in res ? (res.deliverables as any[]) || [] : [];
       
-      const headers = ['Team ID', 'Team Name', 'College', 'Track', 'Problem Statement', 'Judge', 'Round', 'Total Score', 'Team Rubric Score', 'Member Scores', 'Private Comment', 'Public Feedback', 'GitHub Repo', 'Pitch Deck', 'Demo Video / Website Link'];
+      const headers = ['Team ID', 'Team Name', 'Problem Statement', 'Track', 'Judge', 'Round', 'Total Score', 'Team Rubric Score', 'Member Scores', 'Private Comment', 'Public Feedback', 'GitHub Repo', 'Pitch Deck', 'Demo Video / Website Link'];
       
       const csvContent = [
         headers.join(','),
@@ -155,9 +154,8 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
           return [
             ev.teamId?.uniqueId || '',
             `"${(ev.teamId?.name || '').replace(/"/g, '""')}"`,
-            `"${(ev.teamId?.collegeName || ev.teamId?.members?.[0]?.college || '').replace(/"/g, '""')}"`,
-            `"${(ev.teamId?.problemStatementId?.track || 'N/A').replace(/"/g, '""')}"`,
             `"${(ev.teamId?.problemStatementId?.title || 'N/A').replace(/"/g, '""')}"`,
+            `"${(ev.teamId?.problemStatementId?.track || 'N/A').replace(/"/g, '""')}"`,
             `"${(ev.judgeId?.name || '').replace(/"/g, '""')}"`,
             `"${(ev.roundId?.name || '').replace(/"/g, '""')}"`,
             ev.totalScore || 0,
@@ -241,16 +239,21 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
     const autoTable = (await import('jspdf-autotable')).default;
 
     const doc = new jsPDF('landscape');
-    doc.text("Hackathon Evaluations Details", 14, 15);
+    doc.setFontSize(16);
+    doc.text("Hackathon Evaluations Report", 14, 15);
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Total Evaluations: ${filteredEvaluations.length} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
+
     autoTable(doc, {
-      startY: 20,
-      head: [['Team', 'College', 'Track', 'Judge', 'Round', 'Total', 'Team Score', 'Members', 'Comments']],
+      startY: 28,
+      head: [['Team', 'Problem Statement', 'Track', 'Judge', 'Round', 'Total', 'Team Score', 'Members', 'Comments']],
       body: filteredEvaluations.map(ev => {
         const teamScore = ev.scores?.reduce((sum: number, s: any) => sum + (s.score || 0), 0) || 0;
         const memberDetails = ev.memberScores?.map((m: any) => `${m.name.split(' ')[0]}: ${m.totalScore}`).join('\n') || 'None';
         return [
           `${ev.teamId?.name}\n(${ev.teamId?.uniqueId})`,
-          ev.teamId?.collegeName || ev.teamId?.members?.[0]?.college || '-',
+          ev.teamId?.problemStatementId?.title || 'N/A',
           ev.teamId?.problemStatementId?.track || '-',
           ev.judgeId?.name || 'Unknown',
           ev.roundId?.name || 'Unknown',
@@ -259,7 +262,9 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
           memberDetails,
           ev.comment || '-'
         ];
-      })
+      }),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [55, 96, 248], textColor: [255, 255, 255], fontStyle: 'bold' }
     });
     doc.save('hackathon_evaluations.pdf');
   };
@@ -272,7 +277,7 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
       const presentTeams = res.teams.filter((t: any) => t.attendance);
       
       const headers = [
-        'Team ID', 'Team Name', 'College', 'Superset ID(s)', 'Problem Statement', 'Track',
+        'Team ID', 'Team Name', 'Employee ID(s)', 'Problem Statement', 'Track',
         'Innovation and creativity', 'Business impact and relevant', 'Presentation', 'Technical depth',
         'Overall Score', 'Feedback'
       ];
@@ -290,13 +295,12 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
       const rows: string[] = [];
       sortedTracks.forEach(track => {
         teamsByTrack[track].forEach((t: any) => {
-          const supersetIds = t.members?.map((m: any) => m.supersetId || '').filter(Boolean).join('; ') || t.supersetId || '';
+          const empIds = t.members?.map((m: any) => m.employeeId || m.empId || m.supersetId || '').filter(Boolean).join('; ') || t.leadEmployeeId || t.supersetId || '';
           
           rows.push([
             t.uniqueId,
             `"${(t.name || '').replace(/"/g, '""')}"`,
-            `"${(t.collegeName || '').replace(/"/g, '""')}"`,
-            `"${supersetIds}"`,
+            `"${empIds}"`,
             `"${(t.problemStatementId?.title || 'N/A').replace(/"/g, '""')}"`,
             `"${track}"`,
             '', // Innovation
@@ -346,7 +350,7 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
       const doc = new jsPDF('landscape');
       
       const headers = [
-        'Team ID', 'Team Name', 'College', 'Superset ID(s)', 'Problem Statement',
+        'Team ID', 'Team Name', 'Employee ID(s)', 'Problem Statement',
         'Innovation', 'Business', 'Presentation', 'Technical',
         'Overall', 'Feedback'
       ];
@@ -363,13 +367,12 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
         doc.text(`Blank Evaluation Form - ${track}`, 14, 15);
         
         const tableRows = teamsByTrack[track].map((t: any) => {
-          const supersetIds = t.members?.map((m: any) => m.supersetId || '').filter(Boolean).join(',\n') || t.supersetId || '';
+          const empIds = t.members?.map((m: any) => m.employeeId || m.empId || m.supersetId || '').filter(Boolean).join(',\n') || t.leadEmployeeId || t.supersetId || '';
           
           return [
             t.uniqueId,
             t.name,
-            t.collegeName || '-',
-            supersetIds,
+            empIds,
             t.problemStatementId?.title || 'N/A',
             '', // Innovation
             '', // Business
@@ -385,13 +388,14 @@ export function EvaluationList({ evaluations, teams = [], loading, onRefresh }: 
           head: [headers],
           body: tableRows,
           styles: { fontSize: 8, minCellHeight: 25 }, // taller cells for writing
+          headStyles: { fillColor: [55, 96, 248] },
           columnStyles: {
-            5: { cellWidth: 20 }, // Innovation
-            6: { cellWidth: 20 }, // Business
-            7: { cellWidth: 20 }, // Presentation
-            8: { cellWidth: 20 }, // Technical
-            9: { cellWidth: 20 }, // Overall
-            10: { cellWidth: 40 } // Feedback
+            4: { cellWidth: 20 }, // Innovation
+            5: { cellWidth: 20 }, // Business
+            6: { cellWidth: 20 }, // Presentation
+            7: { cellWidth: 20 }, // Technical
+            8: { cellWidth: 20 }, // Overall
+            9: { cellWidth: 40 }  // Feedback
           }
         });
       });

@@ -696,14 +696,14 @@ export function UserManagementBoard({
       const headers = [
         'Team ID',
         'Team Name',
-        'Place',
+        'Location',
         'Department',
         'Problem Statement Title',
         'Problem Statement Track',
         'Selected Stack',
         'Member Role',
         'Member Name',
-        'Superset ID',
+        'Employee ID',
         'Email',
         'Phone',
         'Member Dept',
@@ -722,7 +722,7 @@ export function UserManagementBoard({
           t.members.forEach((m: any, idx: number) => {
             const isLead = (m.email && m.email === t.leadEmail) || (m.name === t.leadName && idx === 0);
             const role = isLead ? 'Team Lead' : `Member ${idx + 1}`;
-            const supersetId = m.supersetId || (isLead ? (t.leadSupersetId || t.supersetId || '') : '');
+            const empId = m.employeeId || m.empId || m.supersetId || (isLead ? (t.leadEmployeeId || t.leadEmpId || t.leadSupersetId || t.supersetId || '') : '');
             
             rows.push([
               t.uniqueId,
@@ -734,7 +734,7 @@ export function UserManagementBoard({
               `"${(stack || '').replace(/"/g, '""')}"`,
               `"${role}"`,
               `"${(m.name || '').replace(/"/g, '""')}"`,
-              `"${(supersetId || '').replace(/"/g, '""')}"`,
+              `"${(empId || '').replace(/"/g, '""')}"`,
               `"${(m.email || '').replace(/"/g, '""')}"`,
               `"${(m.phone || m.contact || '').replace(/"/g, '""')}"`,
               `"${(m.department || t.department || '').replace(/"/g, '""')}"`,
@@ -742,6 +742,7 @@ export function UserManagementBoard({
             ].join(','));
           });
         } else {
+          const empId = t.leadEmployeeId || t.leadEmpId || t.leadSupersetId || t.supersetId || '';
           rows.push([
             t.uniqueId,
             `"${(t.name || '').replace(/"/g, '""')}"`,
@@ -752,7 +753,7 @@ export function UserManagementBoard({
             `"${(stack || '').replace(/"/g, '""')}"`,
             '"Team Lead"',
             `"${(t.leadName || '').replace(/"/g, '""')}"`,
-            `"${(t.leadSupersetId || t.supersetId || '').replace(/"/g, '""')}"`,
+            `"${(empId || '').replace(/"/g, '""')}"`,
             `"${(t.leadEmail || '').replace(/"/g, '""')}"`,
             `"${(t.leadPhone || '').replace(/"/g, '""')}"`,
             `"${(t.department || '').replace(/"/g, '""')}"`,
@@ -793,7 +794,7 @@ export function UserManagementBoard({
 
       const doc = new jsPDF('landscape');
       doc.setFontSize(14);
-      doc.text("Hackathon Teams & Member Superset Details", 14, 15);
+      doc.text("Hackathon Teams & Member Details", 14, 15);
       
       const rows: any[] = [];
       exportList.forEach(t => {
@@ -801,25 +802,27 @@ export function UserManagementBoard({
         if (t.members && t.members.length > 0) {
           t.members.forEach((m: any, idx: number) => {
             const isLead = (m.email && m.email === t.leadEmail) || (m.name === t.leadName && idx === 0);
+            const empId = m.employeeId || m.empId || m.supersetId || (isLead ? (t.leadEmployeeId || t.leadEmpId || t.leadSupersetId || t.supersetId || '-') : '-');
             rows.push([
               t.uniqueId,
               t.name,
               t.place || t.collegeName || '-',
               isLead ? 'Lead' : `Member ${idx + 1}`,
               m.name || '-',
-              m.supersetId || (isLead ? (t.leadSupersetId || t.supersetId || '-') : '-'),
+              empId,
               m.email || m.contact || '-',
               psTitle
             ]);
           });
         } else {
+          const empId = t.leadEmployeeId || t.leadEmpId || t.leadSupersetId || t.supersetId || '-';
           rows.push([
             t.uniqueId,
             t.name,
             t.place || t.collegeName || '-',
             'Lead',
             t.leadName || '-',
-            t.leadSupersetId || t.supersetId || '-',
+            empId,
             t.leadEmail || '-',
             psTitle
           ]);
@@ -828,10 +831,10 @@ export function UserManagementBoard({
 
       autoTable(doc, {
         startY: 20,
-        head: [['Team ID', 'Team Name', 'Place', 'Role', 'Member Name', 'Superset ID', 'Email', 'Problem Statement']],
+        head: [['Team ID', 'Team Name', 'Location', 'Role', 'Member Name', 'Employee ID', 'Email', 'Problem Statement']],
         body: rows,
         styles: { fontSize: 8 },
-        headStyles: { fillColor: [79, 70, 229] }
+        headStyles: { fillColor: [55, 96, 248] }
       });
       doc.save('hackathon_teams_members.pdf');
     } catch (err) {
