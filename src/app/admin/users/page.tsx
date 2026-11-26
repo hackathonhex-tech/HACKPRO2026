@@ -71,7 +71,7 @@ export default function UsersPage() {
 
   const handleCreateTeam = async (data: any) => {
     const res = await createTeamAction(data);
-    return res.success;
+    return res;
   };
 
   const handleDeleteJudge = async (id: string) => {

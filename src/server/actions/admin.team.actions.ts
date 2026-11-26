@@ -103,13 +103,27 @@ export async function getAllFilteredTeamsAction(options: {
 
 export async function createTeamAction(body: any) {
   const auth = await verifyApiAuth(['admin', 'sub-admin'], 'manage_users');
-  if (!auth.authenticated) return { success: false, message: auth.error };
+  if (!auth.authenticated) return { success: false, message: auth.error || 'Unauthorized' };
   
   try {
     const team = await adminTeamService.createTeam(body);
     return { success: true, team };
-  } catch {
-    return { success: false, message: 'Server error' };
+  } catch (err: any) {
+    console.error('Error creating team:', err);
+    let msg = err?.message || 'Failed to create team.';
+    if (err?.code === 11000) {
+      if (err.keyPattern?.leadEmail) {
+        msg = `Team Lead Email "${body.leadEmail}" is already registered with another team.`;
+      } else if (err.keyPattern?.uniqueId) {
+        msg = 'Unique ID conflict, please try again.';
+      } else {
+        msg = 'A team with these credentials already exists in the system.';
+      }
+    } else if (err?.name === 'ValidationError') {
+      const errMsgs = Object.values(err.errors || {}).map((e: any) => e.message);
+      msg = `Validation Error: ${errMsgs.join(', ')}`;
+    }
+    return { success: false, message: msg };
   }
 }
 

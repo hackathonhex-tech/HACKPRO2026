@@ -219,8 +219,7 @@ export function TeamDashboardBoard({ team, feedbacks, currentUser }: TeamDashboa
 
         ctx.fillStyle = '#047857';
         ctx.font = '13px sans-serif';
-        const leadSuperset = team.leadSupersetId || team.supersetId || team.members?.[0]?.supersetId || '—';
-        ctx.fillText(`Email: ${team.leadEmail || '—'}   |   Phone: ${team.leadPhone || '—'}   |   Superset ID: ${leadSuperset}`, 446, 198);
+        ctx.fillText(`Email: ${team.leadEmail || '—'}`, 446, 198);
 
         // Card 2: Selected Problem Statement
         drawRoundedRect(ctx, 425, 234, 740, 96, 14);
@@ -270,8 +269,8 @@ export function TeamDashboardBoard({ team, feedbacks, currentUser }: TeamDashboa
 
           ctx.fillStyle = '#047857';
           ctx.font = '12px sans-serif';
-          const detail = `${m.email || '—'}${m.supersetId ? `  ·  Superset: ${m.supersetId}` : ''}`;
-          ctx.fillText(detail.length > 36 ? detail.substring(0, 33) + '...' : detail, x + 16, y + 49);
+          const detail = m.email || m.contact || '—';
+          ctx.fillText(detail.length > 44 ? detail.substring(0, 41) + '...' : detail, x + 16, y + 49);
         });
 
         // Footer Bar

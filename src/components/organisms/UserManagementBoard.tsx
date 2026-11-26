@@ -38,7 +38,7 @@ export interface UserManagementBoardProps {
   onCreateJudge: (data: any) => Promise<any>;
   onDeleteJudge: (id: string) => Promise<boolean>;
   onEditJudge: (id: string, data: any) => Promise<boolean>;
-  onCreateTeam: (data: any) => Promise<boolean>;
+  onCreateTeam: (data: any) => Promise<any>;
   onDeleteTeam: (id: string) => Promise<boolean>;
   onEditTeam: (id: string, data: any) => Promise<boolean>;
   subAdmins?: any[];
@@ -457,37 +457,66 @@ export function UserManagementBoard({
 
     const collegeName = (teamFormData.collegeName || teamFormData.college || '').trim();
     const department = (teamFormData.department || '').trim();
-    const place = (teamFormData.place || teamFormData.location || '').trim();
+    const place = (teamFormData.place || teamFormData.location || teamFormData.placeDes || '').trim();
 
     // Extract custom fields from team form
     const customFields: Record<string, any> = {};
     Object.entries(teamFormData).forEach(([k, v]) => {
-      if (!['name', 'teamName', 'team_name', 'collegeName', 'college', 'department', 'place', 'location'].includes(k)) {
+      if (!['name', 'teamName', 'team_name', 'collegeName', 'college', 'department', 'place', 'placeDes', 'location'].includes(k)) {
         customFields[k] = v;
       }
     });
+
+    if (!newTeamMembers || newTeamMembers.length === 0) {
+      alert('Please add at least 1 team member.');
+      setIsCreatingTeam(false);
+      return;
+    }
 
     const lead = newTeamMembers[0] || {};
     const leadName = (lead.name || lead.emp_name || lead.leadName || '').trim();
     const leadEmail = (lead.email || lead.email_id || lead.leadEmail || '').trim();
     const leadPhone = (lead.phone || lead.contact || lead.leadPhone || '').trim();
     const leadEmpId = (lead.empId || lead.Emp_id || lead.emp_id || lead.supersetId || '').trim();
-    const leadPlace = (lead.place || lead.location || place).trim();
+    const leadPlace = (lead.place || lead.placeDes || lead.location || place).trim();
     const leadCollege = (lead.college || collegeName).trim();
     const leadDept = (lead.department || department).trim();
 
-    const membersPayload = newTeamMembers.map((m) => {
+    if (!leadEmail) {
+      alert('Member 1 (Team Lead) must have an Email ID.');
+      setIsCreatingTeam(false);
+      return;
+    }
+
+    // Check all members have valid names and emails
+    for (let i = 0; i < newTeamMembers.length; i++) {
+      const m = newTeamMembers[i];
       const mName = (m.name || m.emp_name || '').trim();
+      const mEmail = (m.email || m.email_id || '').trim();
+      if (!mName) {
+        alert(`Please enter Emp Name for Member ${i + 1}.`);
+        setIsCreatingTeam(false);
+        return;
+      }
+      if (!mEmail) {
+        alert(`Please enter Email ID for Member ${i + 1}.`);
+        setIsCreatingTeam(false);
+        return;
+      }
+    }
+
+    const membersPayload = newTeamMembers.map((m, idx) => {
+      const mName = (m.name || m.emp_name || (idx === 0 ? leadName || teamName : '')).trim();
       const mEmail = (m.email || m.email_id || '').trim();
       const mPhone = (m.phone || m.contact || '').trim();
       const mEmpId = (m.empId || m.Emp_id || m.emp_id || m.supersetId || '').trim();
-      const mPlace = (m.place || m.location || leadPlace || place).trim();
+      const mPlace = (m.place || m.placeDes || m.location || leadPlace || place).trim();
       const mCollege = (m.college || leadCollege || collegeName).trim();
       const mDept = (m.department || leadDept || department).trim();
 
       const mCustom: Record<string, any> = {};
       Object.entries(m).forEach(([k, v]) => {
-        if (!['name', 'emp_name', 'empId', 'Emp_id', 'emp_id', 'supersetId', 'email', 'email_id', 'phone', 'contact', 'place', 'location', 'college', 'department', 'attendance'].includes(k)) {
+        if (!['name', 'emp_name', 'empId', 'Emp_id', 'emp_id', 'supersetId', 'email', 'email_id', 'phone', 'contact', 'place', 'placeDes', 'location', 'college', 'department', 'attendance'].includes(k)) {
           mCustom[k] = v;
         }
       });
@@ -508,7 +537,7 @@ export function UserManagementBoard({
       };
     });
 
-    const success = await onCreateTeam({
+    const res = await onCreateTeam({
       name: teamName,
       leadName: leadName || teamName,
       leadEmail,
@@ -523,14 +552,17 @@ export function UserManagementBoard({
       members: membersPayload
     });
 
-    if (success) {
+    const isSuccess = typeof res === 'boolean' ? res : res?.success;
+
+    if (isSuccess) {
       setTeamFormData({});
       setNewTeamMembers([]);
       setIsTeamModalOpen(false);
       onRefresh();
       fetchPaginatedTeams(teamPage, teamPageSize, teamSearchQuery, teamCollegeFilter, teamSizeFilter);
     } else {
-      alert('Failed to create team.');
+      const errMsg = (typeof res === 'object' && res?.message) ? res.message : 'Failed to create team.';
+      alert(errMsg);
     }
     setIsCreatingTeam(false);
   };
