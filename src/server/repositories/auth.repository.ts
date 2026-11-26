@@ -3,12 +3,26 @@ import User from '@/server/models/User';
 import Team from '@/server/models/Team';
 import '@/server/models/Role';
 
-export async function getUserByUniqueIdOrEmail(uniqueId: string) {
+export async function getUserByUniqueIdOrEmail(identifier: string) {
   await connectToDatabase();
-  let user = await User.findOne({ uniqueId }).populate('customRoleId').lean();
-  if (!user) {
-    user = await User.findOne({ email: uniqueId }).populate('customRoleId').lean();
-  }
+  const clean = (identifier || '').trim();
+  if (!clean) return null;
+
+  const cleanLower = clean.toLowerCase();
+  const cleanUpper = clean.toUpperCase();
+  const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const reg = new RegExp(`^${escaped}$`, 'i');
+
+  const user = await User.findOne({
+    $or: [
+      { uniqueId: clean },
+      { uniqueId: cleanUpper },
+      { uniqueId: reg },
+      { email: cleanLower },
+      { email: reg }
+    ]
+  }).populate('customRoleId').lean();
+
   return user ? JSON.parse(JSON.stringify(user)) : null;
 }
 

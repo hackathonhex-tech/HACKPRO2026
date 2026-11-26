@@ -1,26 +1,25 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/server/config/db';
-import User from '@/server/models/User';
 import bcrypt from 'bcrypt';
 import { signToken } from '@/server/middleware/auth';
+import { getUserByUniqueIdOrEmail } from '@/server/repositories/auth.repository';
 
 export async function POST(request: Request) {
   try {
     await connectToDatabase();
     const { uniqueId, password } = await request.json();
 
-    // Try finding by uniqueId first, then by email as fallback
-    let user = await User.findOne({ uniqueId });
-    if (!user) {
-      user = await User.findOne({ email: uniqueId });
-    }
+    const cleanId = (uniqueId || '').trim();
+    const cleanPassword = (password || '').trim();
+
+    const user = await getUserByUniqueIdOrEmail(cleanId);
 
     if (!user) {
       return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    const isMatch = await bcrypt.compare(cleanPassword, user.password);
+    if (!isMatch && user.password !== cleanPassword) {
       return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
     }
 

@@ -93,22 +93,29 @@ import bcrypt from 'bcrypt';
 import { signToken } from '@/server/middleware/auth';
 
 export async function loginStaff(uniqueId: string, password: string) {
+  const cleanId = (uniqueId || '').trim();
+  const cleanPassword = (password || '').trim();
+
+  if (!cleanId || !cleanPassword) {
+    return { success: false, message: 'Please enter both Email/ID and Password.' };
+  }
+
   const envAdminUniqueId = process.env.ADMIN_UNIQUE_ID || 'admin';
   const envAdminEmail = process.env.ADMIN_EMAIL || 'admin@hackathon.com';
   const envAdminPassword = process.env.ADMIN_PASSWORD;
 
   const isEnvAdminMatch = (
-    uniqueId.trim().toLowerCase() === envAdminUniqueId.trim().toLowerCase() ||
-    uniqueId.trim().toLowerCase() === envAdminEmail.trim().toLowerCase()
+    cleanId.toLowerCase() === envAdminUniqueId.toLowerCase() ||
+    cleanId.toLowerCase() === envAdminEmail.toLowerCase()
   );
 
   // If attempting to log in as primary Admin
   if (isEnvAdminMatch) {
-    if (envAdminPassword && password !== envAdminPassword) {
+    if (envAdminPassword && cleanPassword !== envAdminPassword) {
       return { success: false, message: 'Invalid credentials' };
     }
     
-    let user = await getUserByUniqueIdOrEmail(uniqueId);
+    let user = await getUserByUniqueIdOrEmail(cleanId);
     if (!user) {
       user = await getUserByUniqueIdOrEmail('admin');
     }
@@ -122,21 +129,33 @@ export async function loginStaff(uniqueId: string, password: string) {
     return { success: true, token, role: 'admin' };
   }
 
-  const user = await getUserByUniqueIdOrEmail(uniqueId);
+  const user = await getUserByUniqueIdOrEmail(cleanId);
   if (!user) {
     return { success: false, message: 'Invalid credentials' };
   }
 
-  // If user role in DB is admin, strictly require process.env.ADMIN_PASSWORD
-  if (user.role === 'admin') {
-    if (envAdminPassword && password !== envAdminPassword) {
-      return { success: false, message: 'Invalid credentials' };
+  let isMatch = false;
+
+  // 1. Check database hashed password via bcrypt
+  if (user.password) {
+    try {
+      isMatch = await bcrypt.compare(cleanPassword, user.password);
+    } catch {
+      isMatch = false;
     }
-  } else {
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return { success: false, message: 'Invalid credentials' };
+    // Plain-text fallback if unhashed
+    if (!isMatch && user.password === cleanPassword) {
+      isMatch = true;
     }
+  }
+
+  // 2. Fallback: if user has admin role in DB and entered envAdminPassword
+  if (!isMatch && user.role === 'admin' && envAdminPassword && cleanPassword === envAdminPassword) {
+    isMatch = true;
+  }
+
+  if (!isMatch) {
+    return { success: false, message: 'Invalid credentials' };
   }
 
   let finalPermissions = user.permissions || [];

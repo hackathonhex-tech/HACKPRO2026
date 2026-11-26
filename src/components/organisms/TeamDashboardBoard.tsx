@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, FileText, Download, User, Phone, Mail, MessageSquare, MapPin, HelpCircle } from 'lucide-react';
+import { CheckCircle, Clock, FileText, Download, User, Phone, Mail, MessageSquare, MapPin, HelpCircle, Presentation, ExternalLink } from 'lucide-react';
 
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
@@ -477,6 +477,30 @@ export function TeamDashboardBoard({ team, feedbacks, currentUser }: TeamDashboa
               </div>
             </div>
           </div>
+
+          {/* Contact Support Card */}
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700/50 p-6 sm:p-8">
+            <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-4">Contact Support</h3>
+            
+            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-700/50 flex flex-col gap-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Facing any technical issues or need assistance?
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Reach out to the hackathon admin team and track query responses.
+                </p>
+              </div>
+
+              <Link
+                href="/team/support"
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all"
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span>Raise Query</span>
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Status Section */}
@@ -560,6 +584,51 @@ export function TeamDashboardBoard({ team, feedbacks, currentUser }: TeamDashboa
             </div>
           </div>
 
+          {/* Official Presentation Template Card */}
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700/50 p-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl">
+                  <Presentation className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Official Presentation Template</h3>
+                  <span className="inline-block mt-0.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                    Required for Submissions
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-amber-50/60 dark:bg-amber-950/20 rounded-2xl p-4 border border-amber-200/50 dark:border-amber-800/30 mb-5 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+              All team presentations must be created using the official hackathon PPT template. Please download the template below, update it with your team&apos;s solution details, and attach the link when submitting your deliverables.
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <a
+                href="https://docs.google.com/presentation/d/1by9ByWXFoUoskWTm1DrhOqf7KJA6SqDU/edit?usp=sharing&ouid=112558402096863870802&rtpof=true&sd=true"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 inline-flex items-center justify-center px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all gap-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download / Open Template</span>
+                <ExternalLink className="w-4 h-4 opacity-75" />
+              </a>
+
+              <a
+                href="https://docs.google.com/presentation/d/1by9ByWXFoUoskWTm1DrhOqf7KJA6SqDU/export/pptx"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-all gap-1.5"
+                title="Directly download .PPTX file"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span>Export .PPTX</span>
+              </a>
+            </div>
+          </div>
+
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700/50 p-8">
             <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-4">Assigned Judges</h3>
             {(!team.assignedJudges || team.assignedJudges.length === 0) ? (
@@ -605,30 +674,6 @@ export function TeamDashboardBoard({ team, feedbacks, currentUser }: TeamDashboa
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Contact Support Card */}
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700/50 p-8">
-            <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-4">Contact Support</h3>
-            
-            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-700/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-              <div>
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Facing any technical issues or need assistance?
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  Reach out to the hackathon admin team and track query responses.
-                </p>
-              </div>
-
-              <Link
-                href="/team/support"
-                className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all"
-              >
-                <HelpCircle className="w-4 h-4" />
-                <span>Raise Query</span>
-              </Link>
-            </div>
           </div>
         </div>
       </div>

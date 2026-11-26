@@ -10,40 +10,55 @@ export async function getJudges() {
 
 export async function createJudge(body: any) {
   const { name, email, password, assessmentMode } = body;
-  const trimmedEmail = email ? email.toLowerCase().trim() : '';
+  const cleanEmail = email ? email.toLowerCase().trim() : '';
+  const cleanName = (name || '').trim();
+  const cleanPassword = (password || '').trim();
+
+  if (!cleanName) {
+    throw new Error('Judge name is required.');
+  }
+  if (!cleanPassword) {
+    throw new Error('Password is required.');
+  }
 
   await connectToDatabase();
-  if (trimmedEmail) {
-    const existing = await User.findOne({ email: trimmedEmail }).lean();
+  if (cleanEmail) {
+    const escaped = cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const existing = await User.findOne({
+      $or: [
+        { email: cleanEmail },
+        { email: new RegExp(`^${escaped}$`, 'i') }
+      ]
+    }).lean();
     if (existing) {
       throw new Error(`Email "${email}" is already registered to judge "${(existing as any).name}". Please use a different email.`);
     }
   }
 
   const uniqueId = `JDG-${uuidv4().substring(0, 6).toUpperCase()}`;
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(cleanPassword, 10);
 
   await judgeRepo.createJudge({
     uniqueId,
-    email: trimmedEmail,
+    email: cleanEmail,
     password: hashedPassword,
     role: 'judge',
-    name: name.trim(),
+    name: cleanName,
     assessmentMode: assessmentMode === 'offline' ? 'offline' : 'virtual'
   });
 
-  return { uniqueId, name, email: trimmedEmail, assessmentMode: assessmentMode === 'offline' ? 'offline' : 'virtual' };
+  return { uniqueId, name: cleanName, email: cleanEmail, assessmentMode: assessmentMode === 'offline' ? 'offline' : 'virtual' };
 }
 
 export async function updateJudge(id: string, body: any) {
   const updateData: any = {};
-  if (body.name) updateData.name = body.name;
-  if (body.email) updateData.email = body.email;
+  if (body.name) updateData.name = body.name.trim();
+  if (body.email) updateData.email = body.email.toLowerCase().trim();
   if (body.assessmentMode) {
     updateData.assessmentMode = body.assessmentMode === 'offline' ? 'offline' : 'virtual';
   }
-  if (body.password) {
-    updateData.password = await bcrypt.hash(body.password, 10);
+  if (body.password && body.password.trim()) {
+    updateData.password = await bcrypt.hash(body.password.trim(), 10);
   }
 
   const judge = await judgeRepo.updateJudge(id, updateData);
