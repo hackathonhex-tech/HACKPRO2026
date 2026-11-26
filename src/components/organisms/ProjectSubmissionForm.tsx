@@ -1,5 +1,5 @@
 import React from 'react';
-import { UploadCloud, CheckCircle, GitBranch, MonitorPlay, FileText, Film, ExternalLink } from 'lucide-react';
+import { UploadCloud, CheckCircle, GitBranch, MonitorPlay, FileText, Film, ExternalLink, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface ProjectSubmissionFormProps {
@@ -118,15 +118,13 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
                   <MonitorPlay className="w-4 h-4 mr-1.5 text-slate-400" /> Pitch Deck
                 </label>
                 <a
-                  href="https://docs.google.com/presentation/d/1by9ByWXFoUoskWTm1DrhOqf7KJA6SqDU/edit?usp=sharing&ouid=112558402096863870802&rtpof=true&sd=true"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors gap-1"
-                  title="Open official PPT template"
+                  href="/templates/Hexaware_Mavericks_Hackathon_Template.pptx"
+                  download="Hexaware_Mavericks_Hackathon_Template.pptx"
+                  className="inline-flex items-center text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors gap-1 cursor-pointer"
+                  title="Download official PPT template"
                 >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>PPT Template</span>
-                  <ExternalLink className="w-3 h-3 opacity-80" />
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PPT Template (.pptx)</span>
                 </a>
               </div>
               <input

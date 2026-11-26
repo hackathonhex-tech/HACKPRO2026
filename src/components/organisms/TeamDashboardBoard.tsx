@@ -605,25 +605,12 @@ export function TeamDashboardBoard({ team, feedbacks, currentUser }: TeamDashboa
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <a
-                href="https://docs.google.com/presentation/d/1by9ByWXFoUoskWTm1DrhOqf7KJA6SqDU/edit?usp=sharing&ouid=112558402096863870802&rtpof=true&sd=true"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 inline-flex items-center justify-center px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all gap-2"
+                href="/templates/Hexaware_Mavericks_Hackathon_Template.pptx"
+                download="Hexaware_Mavericks_Hackathon_Template.pptx"
+                className="flex-1 inline-flex items-center justify-center px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all gap-2 cursor-pointer text-center"
               >
-                <Download className="w-4 h-4" />
-                <span>Download / Open Template</span>
-                <ExternalLink className="w-4 h-4 opacity-75" />
-              </a>
-
-              <a
-                href="https://docs.google.com/presentation/d/1by9ByWXFoUoskWTm1DrhOqf7KJA6SqDU/export/pptx"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-all gap-1.5"
-                title="Directly download .PPTX file"
-              >
-                <Download className="w-3.5 h-3.5 text-slate-500" />
-                <span>Export .PPTX</span>
+                <Download className="w-4 h-4 shrink-0" />
+                <span>Download Official PPT Template (.pptx)</span>
               </a>
             </div>
           </div>
